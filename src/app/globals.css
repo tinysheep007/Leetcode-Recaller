@@ -63,3 +63,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .offline-status p { margin: 8px 0; }
 .offline-status details { max-width: 600px; }
 @media(max-width:600px) { .offline-status { padding: 0 22px; } }
+.daily-panel { margin-top: 34px; padding: 25px; border: 1px solid var(--line); border-radius: 16px; background: #fcfcf8; }
+.daily-panel h2 { margin: 0; }
+.daily-progress { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.daily-progress strong { font-size: 32px; font-weight: 500; }
+.daily-progress strong span { font-size: 14px; color: var(--muted); }
+.daily-panel progress { display: block; width: 100%; height: 7px; margin: 15px 0; accent-color: var(--accent); }
+.secondary { padding: 12px 17px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); background: #edf0e8; font-size: 13px; }
+.daily-settings { border-top: 1px solid var(--line); padding-top: 15px; margin-top: 20px; font-size: 13px; }
+.daily-settings label { display: block; margin: 18px 0 10px; }
+.daily-settings input { width: 85px; padding: 12px; background: white; border: 1px solid var(--line); border-radius: 8px; }
+@media(max-width:600px) { .daily-panel { padding: 20px 16px; } .daily-panel .actions { gap: 12px; } }

@@ -12,6 +12,7 @@ These decisions supersede conflicting native iOS implementation and deployment s
 - Plan for a Vercel Cron endpoint and an email provider, potentially via Nodemailer. Provider selection and sender setup remain to be completed; credentials must stay on the server.
 - Vercel Hobby daily cron timing is approximate within the scheduled hour.
 - Keep the MVP simple: no backup feature, cloud accounts, or native app distribution.
+- Daily sessions: configurable soft target (default 5), oldest due cards first, stable selections, unfinished carryover at local midnight, optional extra due practice, and a Random problem button across the entire library. Only explicit ratings reschedule cards. Editing and manual creation are deferred. See `docs/DAILY_REVIEWS.md` for target-change and manual-review semantics.
 - The native iOS notification acceptance check below is replaced by an email link opening the review session; dismissing an email must not erase due reviews.
 - Import source supplied: `questions.zip`, a Notion Markdown export containing category pages and individual problem pages. Category/index pages should not become problem cards.
 - Missing fields are allowed and must not block import or review. Preserve missing values as empty rather than generating answers. If a reveal control exists for a missing field (such as runtime or space complexity), show “Not provided yet” only after the user reveals it. Missing descriptions can follow this same reveal behavior. Missing-field notices must not appear on the title-only front or automatically expose other sections.
