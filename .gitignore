@@ -7,3 +7,6 @@ out/
 *.tsbuildinfo
 .DS_Store
 npm-debug.log*
+
+# Personal source notes; imported locally through the app.
+/questions.zip

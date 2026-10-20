@@ -16,16 +16,25 @@ Open http://127.0.0.1:3000. Edit `src/app/page.tsx` to see changes in the browse
 ## Verify
 
 ```sh
+npm test
 npm run typecheck
 npm run build
 ```
 
 ## Current state
 
-Initial project scaffold with a responsive empty library screen. Import, storage, FSRS, offline caching, and email reminders are planned; they are not implemented yet. See `leetcode_recall_requirements.md` for the product baseline and updated web app decisions.
+Notion ZIP and individual Markdown import, a searchable category-filtered library, independent answer reveals, missing-field placeholders, and FSRS ratings with IndexedDB persistence are implemented. Existing identified cards are skipped on repeat import, preserving notes and review history. Imported images and original Markdown are retained. All imported cards initially become due; the review button currently includes all due cards.
+
+Note editing, difficulty extraction, user-configurable daily targets, offline app caching, email reminders, and deployment are not implemented yet. The current question description reveal shows a missing-field placeholder; no descriptions are generated from solution notes. Browser data belongs to the current device and site origin; localhost data does not transfer automatically to a future deployed URL. See `leetcode_recall_requirements.md` for the product baseline and updated web app decisions.
 
 ## Deployment plan
 
 Connect this repository to Vercel as a Next.js project. GitHub and Vercel have not been connected yet. No external services or credentials are required for the local scaffold.
 
 Future email credentials belong in server-side environment variables, never in client code or Git. A daily generic reminder can be added without uploading personal notes or review history.
+
+## Importing your notes
+
+Click **Import notes +** and select `questions.zip` or a Markdown file. Import happens locally in your browser. The source ZIP is not bundled into the website.
+
+The optional real-export test is run with `RECALL_TEST_ARCHIVE=questions.zip npm test`; it checks this supplied export against its expected 151 problem pages. Other tests run without the private export.
