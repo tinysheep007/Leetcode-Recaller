@@ -10,3 +10,6 @@ npm-debug.log*
 
 # Personal source notes; imported locally through the app.
 /questions.zip
+
+# Generated from the production build
+/public/sw.js
