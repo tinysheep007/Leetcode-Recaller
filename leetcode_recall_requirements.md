@@ -9,7 +9,7 @@ These decisions supersede conflicting native iOS implementation and deployment s
 - Store notes, FSRS scheduling state, and review history locally in IndexedDB. Cache the app with a service worker for offline use after initial loading.
 - Use a daily email reminder with a link to the review session instead of native local iOS notifications. Email delivery requires internet; offline review does not.
 - Start with a generic daily reminder. Completion-aware emails and cloud synchronization of review state are not approved scope.
-- Plan for a Vercel Cron endpoint and an email provider, potentially via Nodemailer. Provider selection and sender setup remain to be completed; credentials must stay on the server.
+- Use Vercel Cron and the official Resend npm SDK for one generic owner-only email reminder. Credentials and recipient stay on the server. Provider account setup, sender eligibility and actual delivery must be verified before marking reminders active. The free resend.dev test sender is restricted to the account owner.
 - Vercel Hobby daily cron timing is approximate within the scheduled hour.
 - Keep the MVP simple: no backup feature, cloud accounts, or native app distribution.
 - Daily sessions: configurable soft target (default 5), oldest due cards first, stable selections, unfinished carryover at local midnight, optional extra due practice, and a Random problem button across the entire library. Only explicit ratings reschedule cards. Editing and manual creation are deferred. See `docs/DAILY_REVIEWS.md` for target-change and manual-review semantics.

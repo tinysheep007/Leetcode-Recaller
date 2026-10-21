@@ -52,7 +52,10 @@ Keep this file updated as work is completed. Checked means implemented; verifica
 - [x] Basic app deployed at https://leetcode-recaller.vercel.app/ (user confirmed).
 - [ ] Deploy and verify the latest daily-session changes.
 - [ ] Email provider and sender configured.
-- [ ] Daily cron email with app link; endpoint authentication and duplicate-send protection.
+- [x] Daily cron email code with app link, server-side recipient, cron authentication, enabled switch and provider 24-hour idempotency protection.
+- [x] Fake-sender tests for authentication, configuration, recipient restrictions, retries and provider failures.
+- [ ] Verify real Resend delivery to the owner and an active scheduled Vercel run after account setup.
+- [x] Owner-requested Boston 8 a.m. reminder hour with automatic daylight/standard-time slot selection (approximately 8–9 a.m. on Hobby).
 - [ ] Reminder time/settings UI, if included in MVP.
 
 No backup feature or cloud sync is planned. Localhost, deployed sites, browsers and devices have separate local data. Offline caches and IndexedDB survive ordinary restarts but can be removed by clearing site data or browser storage eviction.
