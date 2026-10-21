@@ -8,7 +8,7 @@
 4. Open **Questions** in the header to see every problem with saved questions, grouped by problem.
 5. Search the portal by problem title or question text. **Open problem** opens its back with My questions expanded; solution sections stay collapsed.
 
-The Questions navigation count is the number of problems with questions. The portal also shows the total number of saved questions. The flashcard front does not display personal question contents or a problem-specific question count. Writing questions does not rate a card, change its FSRS state, or complete a daily obligation.
+The top-level Questions tab has no count. The portal itself shows the total number of saved questions and problems with questions. The flashcard front does not display personal question contents or a problem-specific question count. Writing questions does not rate a card, change its FSRS state, or complete a daily obligation.
 
 Questions are plain text, preserving internal line breaks. Each must contain 1–10,000 non-whitespace characters. Saving is explicit; unsaved draft text is not persisted across navigation/refresh. No deletion, resolved status, full note editing, or cloud sync was added.
 

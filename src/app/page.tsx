@@ -141,7 +141,7 @@ export default function Home() {
     const id = randomProblemId(problems);
     if (id) start([id], 'random');
   }
-  return <main><header><a className="brand" href="/">recall<span>.</span></a><nav className="header-nav" aria-label="Main navigation"><button className="text-button" disabled={busy} aria-pressed={!portal && !stats && !current} onClick={() => { start([]); setPortal(false); setStats(false); }}>Library</button><button className="text-button" disabled={!ready || busy} aria-pressed={portal && !stats && !current} onClick={() => { start([]); setPortal(true); setStats(false); }}>Questions ({withQuestions.length})</button><button className="text-button" disabled={!ready || busy} aria-pressed={stats && !current} onClick={() => { start([]); setPortal(false); setStats(true); }}>Stats</button></nav></header>
+  return <main><header><a className="brand" href="/">recall<span>.</span></a><nav className="header-nav" aria-label="Main navigation"><button className="text-button" disabled={busy} aria-pressed={!portal && !stats && !current} onClick={() => { start([]); setPortal(false); setStats(false); }}>Library</button><button className="text-button" disabled={!ready || busy} aria-pressed={portal && !stats && !current} onClick={() => { start([]); setPortal(true); setStats(false); }}>Questions</button><button className="text-button" disabled={!ready || busy} aria-pressed={stats && !current} onClick={() => { start([]); setPortal(false); setStats(true); }}>Stats</button></nav></header>
     <input ref={input} hidden type="file" accept=".zip,.md,.markdown" onChange={e => { const file = e.target.files?.[0]; if (file) void upload(file); }} />
     {error && <p role="alert" className="error">{error}</p>}{message && <p role="status" className="notice">{message}</p>}
     {!ready ? <p className="intro">{error ? 'Local storage is unavailable.' : 'Opening your library…'}</p> : current ? <section className="review-area">
@@ -156,7 +156,7 @@ export default function Home() {
           <div className="ratings">{(['Forgot', 'Rusty', 'Comfy'] as const).map(r => <button disabled={busy} key={r} onClick={() => void rate(r)}>{r}</button>)}</div>
         </>}
       </article>
-    </section> : stats ? <Statistics problems={problems} reviews={activity.reviews} visits={activity.visits} /> : portal ? <section className="questions-portal tab-panel" aria-labelledby="questions-title">
+    </section> : stats ? <Statistics problems={problems} reviews={activity.reviews} visits={activity.visits} /> : portal ? <section key="questions" className="questions-portal tab-panel" aria-labelledby="questions-title">
       <p className="eyebrow">YOUR FOLLOW-UP LIST</p><h1 className="tab-title" id="questions-title">Questions to revisit.</h1>
       <p className="subtitle">{questions.length} saved questions across {withQuestions.length} problems. Saved on this device.</p>
       <input className="question-search" type="search" aria-label="Search saved questions" placeholder="Search problem titles or your questions…" value={questionQuery} onChange={e => setQuestionQuery(e.target.value)} />
@@ -164,7 +164,7 @@ export default function Home() {
       {questionMatches.map(problem => <article key={problem.id} className="question-group"><div className="section-heading"><h2>{problem.title}</h2><button className="secondary" onClick={() => { start([problem.id]); setQuestionFocus(true); setBack(true); }}>Open problem</button></div><ul>{questions.filter(q => q.problemId === problem.id).map(q => <li key={q.id}>{q.text}</li>)}</ul></article>)}
       {!!withQuestions.length && !questionMatches.length && <p className="muted">No saved questions match your search.</p>}
     </section> : <>
-      <section className="intro tab-panel"><p className="eyebrow">SOLVED ONCE. REMEMBER LONGER.</p><h1 className="tab-title">A little recall.<br />A lot more confidence.</h1><p className="subtitle">Revisit the problems you’ve solved, with your own notes and the answers tucked away.</p>
+      <section key="library" className="intro tab-panel"><p className="eyebrow">SOLVED ONCE. REMEMBER LONGER.</p><h1 className="tab-title">A little recall.<br />A lot more confidence.</h1><p className="subtitle">Revisit the problems you’ve solved, with your own notes and the answers tucked away.</p>
         {daily && <section className="daily-panel" aria-labelledby="daily-title">
           <div className="section-heading"><h2 id="daily-title">Today’s review</h2><span className="count">{daily.day}</span></div>
           <div className="daily-progress"><strong>{daily.completedIds.length}<span> / {daily.selectedIds.length} completed</span></strong><span className="muted">Daily target: {target}</span></div>
@@ -185,7 +185,7 @@ export default function Home() {
           <div className="filters"><input aria-label="Search problem titles" placeholder="Search problems…" value={query} onChange={e => { setQuery(e.target.value); setLibraryPage(0); }} /><select aria-label="Filter by category" value={category} onChange={e => { setCategory(e.target.value); setLibraryPage(0); }}><option value="">All categories</option>{Array.from(new Set(problems.map(p => p.category))).sort().map(c => <option key={c}>{c}</option>)}</select><select aria-label="Filter by difficulty" value={difficulty} onChange={e => { setDifficulty(e.target.value); setLibraryPage(0); }}><option value="">All difficulties</option>{['Easy', 'Medium', 'Hard', 'Unrated'].map(d => <option key={d}>{d}</option>)}</select></div>
           <p className="muted small">Opening any problem lets you review early. A rating updates its next review date. Reimport skips existing cards.</p>
           {!!filtered.length && <LibraryPages page={currentPage} pageCount={pageCount} total={filtered.length} position="top" onPage={changeLibraryPage} />}
-          <div className="problem-list">{pageProblems.map(p => <button className="problem-row" key={p.id} onClick={() => start([p.id])}><span><strong>{p.title}</strong><small>{p.category}</small></span><span className="count">{p.schedule.reps === 0 ? 'New' : +new Date(p.schedule.due) <= now ? 'Ready to review' : `Next review ${new Date(p.schedule.due).toLocaleDateString()}`} →</span></button>)}</div>
+          <div className="problem-list">{pageProblems.map(p => <button className="problem-row" key={p.id} onClick={() => start([p.id])}><span><strong>{p.title}</strong><small>{p.category}</small></span><span className="count">{p.schedule.reps === 0 ? '' : +new Date(p.schedule.due) <= now ? 'Ready to review' : `Next review ${new Date(p.schedule.due).toLocaleDateString()}`} →</span></button>)}</div>
           {!!filtered.length && <LibraryPages page={currentPage} pageCount={pageCount} total={filtered.length} position="bottom" onPage={changeLibraryPage} />}
           {!filtered.length && <p className="muted">No problems match your search.</p>}
         </>}

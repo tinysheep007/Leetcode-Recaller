@@ -4,8 +4,21 @@ Keep this file updated as work is completed. Checked means implemented; verifica
 
 ## Interface consistency
 
+- [x] Subtle CSS-only tab/card entrances, answer reveals, chart entrances and press feedback; no animation dependencies or external downloads, with Reduce Motion support.
+- [ ] Verify animation feel and Reduce Motion behavior on the actual iPhone.
+
+- [x] Questions navigation label has no count.
+
 - [x] Shared responsive headline size, line spacing and top offset across Library, Questions and Stats tabs.
 - [ ] Visual verification of tab headings on the actual iPhone.
+
+## Setup documentation
+
+- [x] Current source/docs use generic account and deployment examples; private ZIP and real env files remain excluded. Known-identifier and common-secret scans of publishable text files found no matches. This does not anonymize existing Git author metadata/history.
+
+- [x] README links a complete setup/usage guide, import-format examples, Vercel deployment, Resend signup/keys, Production environment values, iPhone setup and troubleshooting.
+- [x] Private questions.zip remains excluded; no default archive is advertised as bundled.
+- [ ] Independent fresh-clone setup and actual provider/device verification.
 
 ## Foundation and import
 
@@ -47,7 +60,7 @@ Keep this file updated as work is completed. Checked means implemented; verifica
 - [x] Version 1 storage migration preserves existing cards, assets and review history; daily ratings save atomically.
 - [x] Document session rules and tradeoffs in DAILY_REVIEWS.md.
 - [x] Browser verification with disposable cards: resume after reload, lower/increase target, random selection without rating, full daily completion, extra due practice, and offline rating persistence.
-- [x] Unreviewed cards display New, with no assigned review deadline; daily sets offer scheduled reviews first, then new cards. Existing selections remain stable.
+- [x] Unreviewed card rows show only a navigation arrow, with no New label or assigned review deadline; daily sets offer scheduled reviews first, then new cards. Existing selections remain stable.
 - [x] Keep scheduler target retention fixed at 90%; no settings UI requested.
 - [x] Local Stats view: visits per problem, timestamped rating history, latest-rating category comparisons and least/most comfy sorting. History list is searchable and paginated.
 - [x] Lightweight local category chart with labeled rating segments, unrated coverage and expandable exact counts; no chart dependency or network requests.
@@ -68,7 +81,7 @@ Keep this file updated as work is completed. Checked means implemented; verifica
 ## Deployment and reminders
 
 - [x] GitHub remote configured by user.
-- [x] Basic app deployed at https://leetcode-recaller.vercel.app/ (user confirmed).
+- [x] Basic app deployed to a production HTTPS origin (owner confirmed).
 - [ ] Deploy and verify the latest daily-session changes.
 - [ ] Email provider and sender configured.
 - [x] Daily cron email code with app link, server-side recipient, cron authentication, enabled switch and provider 24-hour idempotency protection.

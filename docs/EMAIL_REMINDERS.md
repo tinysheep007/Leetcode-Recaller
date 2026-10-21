@@ -22,7 +22,7 @@ No provider account, real credentials or live mailbox has been configured by the
 | `REMINDER_TO` | Exactly the email associated with your Resend account when using the test sender |
 | `CRON_SECRET` | A random secret at least 16 characters long; use a password manager or locally generate one |
 | `REMINDER_ENABLED` | `true` to send; `false` to pause |
-| `APP_URL` | `https://leetcode-recaller.vercel.app/` (stable production origin) |
+| `APP_URL` | `https://recall.example.com/` (placeholder; replace with your stable production origin) |
 | `REMINDER_FROM` | Optional: `LeetCode Recall <onboarding@resend.dev>` is the default |
 | `REMINDER_TIME_ZONE` | Optional: `America/New_York` is the default, used to determine the day for duplicate suppression |
 

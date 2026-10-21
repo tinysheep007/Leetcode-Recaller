@@ -136,3 +136,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .tab-panel { padding-top: 64px; }
 .tab-title { font-size: clamp(32px, 5vw, 50px); line-height: 1.12; letter-spacing: -1px; font-weight: 400; margin: 0; }
 @media(max-width:600px) { .tab-panel { padding-top: 48px; } }
+
+/* Bundled CSS only: short, one-shot motion; Reduce Motion disables it all. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes recall-enter {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes recall-bar-enter {
+    from { transform: scaleX(.96); opacity: .6; }
+    to { transform: scaleX(1); opacity: 1; }
+  }
+  .tab-panel { animation: recall-enter 200ms ease-out; }
+  .review-card { animation: recall-enter 170ms ease-out; }
+  .reveal > .markdown, .my-questions > div,
+  .original[open] > .markdown { animation: recall-enter 150ms ease-out; }
+  .chart-bar { transform-origin: left; animation: recall-bar-enter 260ms ease-out; }
+  button { transition: transform 100ms ease-out, background-color 140ms ease-out, color 140ms ease-out; }
+  button:enabled:active { transform: translateY(1px) scale(.99); }
+}

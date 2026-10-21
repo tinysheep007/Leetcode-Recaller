@@ -16,7 +16,7 @@ For each problem, use only its latest timestamped rating. Count Forgot, Rusty an
 
 ## Review dates and filtering
 
-Cards with zero scheduler repetitions display New in the library. Their initial internal FSRS timestamp does not represent a deadline. Scheduled reviewed cards show Ready to review or their next review date. Daily sets prioritize scheduled reviews, then fill available target slots with new cards. Unfinished saved selections continue to carry forward; they are suggestions at the user's pace, not deadlines.
+Cards with zero scheduler repetitions show only the navigation arrow in the library, with no New label. Their initial internal FSRS timestamp does not represent a deadline. Scheduled reviewed cards show Ready to review or their next review date. Daily sets prioritize scheduled reviews, then fill available target slots with new cards. Unfinished saved selections continue to carry forward; they are suggestions at the user's pace, not deadlines.
 
 Difficulty, category and title filters combine across the entire library before pagination. Changing a filter returns to the first page. Filters affect browsing, not the saved daily selection or global Random button. Difficulty stays hidden on card fronts.
 

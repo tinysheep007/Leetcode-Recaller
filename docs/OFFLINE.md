@@ -42,3 +42,7 @@ Short descriptions, difficulty ratings and source URLs ship in the app bundle an
 Schema v4 adds a local visits store; existing problems, ratings, questions and assets are preserved. Stats, visit counting, rating history and category comparisons use only IndexedDB and are bundled in the offline root app shell. Existing rating history is included; historical visits cannot be reconstructed. Automated upgrade/aggregation tests and production build pass. Interactive iPhone/offline verification of these new controls remains pending. See STATISTICS.md.
 
 Stats category charts use bundled HTML/CSS and local data only; there is no chart library, external image or remote endpoint. Graphs and history pagination operate offline after app caching. App installation/version updates still require downloading the app shell.
+
+## Interface motion
+
+Short tab/card/reveal entrances, chart entrances and button press feedback use bundled CSS only, with no animation assets, libraries, network calls or looping effects. They operate offline and are enabled only under `prefers-reduced-motion: no-preference`; the phone's Reduce Motion preference disables them. App updates still download the updated CSS as part of normal caching. Production build is checked; actual iPhone motion/performance verification remains pending.
