@@ -8,13 +8,13 @@ export function validTarget(value: number) {
   return value;
 }
 export type DailySession = { day: string; selectedIds: string[]; completedIds: string[] };
-export type SchedulableProblem = { id: string; schedule: { due: Date } };
+export type SchedulableProblem = { id: string; schedule: { due: Date; reps?: number } };
 export function pendingIds(session: DailySession) {
   const completed = new Set(session.completedIds);
   return session.selectedIds.filter(id => !completed.has(id));
 }
 export function dueProblems<T extends SchedulableProblem>(problems: T[], now: Date) {
-  return problems.filter(p => +new Date(p.schedule.due) <= +now)
+  return problems.filter(p => p.schedule.reps !== 0 && +new Date(p.schedule.due) <= +now)
     .sort((a, b) => +new Date(a.schedule.due) - +new Date(b.schedule.due) || a.id.localeCompare(b.id));
 }
 export function buildDailySession(problems: SchedulableProblem[], previous: DailySession | undefined, target: number, now: Date): DailySession {
@@ -25,7 +25,7 @@ export function buildDailySession(problems: SchedulableProblem[], previous: Dail
   const completedIds = sameDay ? previous.completedIds.filter(id => selectedIds.includes(id)) : [];
   // Keep today's selections stable, even when a target is lowered. Only add open slots.
   const selected = new Set(selectedIds);
-  for (const problem of dueProblems(problems, now)) {
+  for (const problem of [...dueProblems(problems, now), ...problems.filter(p => p.schedule.reps === 0).sort((a, b) => a.id.localeCompare(b.id))]) {
     if (selectedIds.length >= target) break;
     if (!selected.has(problem.id)) { selectedIds.push(problem.id); selected.add(problem.id); }
   }

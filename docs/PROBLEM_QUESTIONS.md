@@ -14,7 +14,7 @@ Questions are plain text, preserving internal line breaks. Each must contain 1â€
 
 ## Database design
 
-Database: `leetcode-recall`, schema **version 3**. Existing stores remain intact:
+Database: `leetcode-recall`, schema **version 4** (questions were introduced in version 3; version 4 adds visits). Existing stores remain intact:
 
 | Store | Purpose |
 | --- | --- |
@@ -23,7 +23,7 @@ Database: `leetcode-recall`, schema **version 3**. Existing stores remain intact
 | assets | Imported image blobs |
 | settings | Daily target |
 | sessions | Saved daily selection and completion |
-| questions (new) | Multiple personal questions linked to each problem |
+| questions | Multiple personal questions linked to each problem |
 
 Question record:
 

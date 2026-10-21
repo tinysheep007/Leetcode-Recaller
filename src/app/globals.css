@@ -82,7 +82,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .question-note { border-bottom: 1px solid var(--line); padding: 10px 0; }
 .question-note p, .question-group li { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; font-size: 14px; }
 .questions-portal { padding: 55px 0; }
-.questions-portal h1 { font-size: clamp(32px, 5vw, 50px); }
 .question-search { width: 100%; padding: 14px; border: 1px solid var(--line); border-radius: 9px; background: white; margin: 10px 0 25px; font-size: 14px; }
 .question-group { padding: 22px; margin-bottom: 18px; border: 1px solid var(--line); border-radius: 12px; background: #fcfcf8; }
 .question-group h2 { line-height: 1.5; }
@@ -106,3 +105,34 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .difficulty-easy { color: #23704e; }
 .difficulty-medium { color: #805b08; }
 .difficulty-hard { color: #aa3333; }
+
+.statistics { padding: 48px 0; }
+.statistics h2 { margin-top: 28px; }
+.stats-select { padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fcfcf8; color: var(--ink); }
+.stats-table { overflow-x: auto; }
+.stats-table table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.stats-table th, .stats-table td { padding: 14px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.history-problem { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.history-problem summary { cursor: pointer; line-height: 1.7; }
+.history-problem summary span { display: block; }
+.history-problem li { padding: 5px 0; font-size: 14px; }
+@media(max-width:600px) { header { gap: 12px; flex-wrap: wrap; } .header-nav { flex-wrap: wrap; } .statistics .section-heading { flex-wrap: wrap; gap: 10px; } }
+
+.recall-chart { margin: 22px 0; padding: 20px; background: #fcfcf8; border: 1px solid var(--line); border-radius: 12px; }
+.recall-chart figcaption, .chart-legend { color: var(--muted); font-size: 12px; line-height: 1.7; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 12px 0 20px; }
+.chart-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.chart-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.chart-row { margin: 16px 0; }
+.chart-label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-bottom: 6px; font-size: 13px; line-height: 1.5; }
+.chart-label > span { color: var(--muted); font-size: 12px; }
+.chart-bar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; }
+.chart-forgot { background: #aa4444; }
+.chart-rusty { background: #c99c3c; }
+.chart-comfy { background: #527553; }
+.chart-unrated { background: #dce0d5; }
+.stats-breakdown > summary { cursor: pointer; font-size: 14px; padding: 12px 0; }
+
+.tab-panel { padding-top: 64px; }
+.tab-title { font-size: clamp(32px, 5vw, 50px); line-height: 1.12; letter-spacing: -1px; font-weight: 400; margin: 0; }
+@media(max-width:600px) { .tab-panel { padding-top: 48px; } }

@@ -5,19 +5,22 @@ import { buildDailySession, DEFAULT_DAILY_TARGET, validTarget, type DailySession
 import { withProblemReference } from './problem-references';
 export type Problem = ImportedProblem & { schedule: Card; parserVersion?: number };
 export type ProblemQuestion = { id: string; problemId: string; text: string; createdAt: Date; updatedAt: Date };
+export type ProblemVisits = { problemId: string; count: number; lastVisitedAt: Date };
+export type SavedReview = { id: string; problemId: string; rating: RecallRating; at: Date; log: ReviewLog };
 export type RecallRating = 'Forgot' | 'Rusty' | 'Comfy';
 interface RecallDB extends DBSchema {
   problems: { key: string; value: Problem };
-  reviews: { key: string; value: { id: string; problemId: string; rating: RecallRating; at: Date; log: ReviewLog } };
+  reviews: { key: string; value: SavedReview };
   assets: { key: string; value: Blob };
   settings: { key: string; value: { dailyTarget: number } };
   sessions: { key: string; value: DailySession };
+  visits: { key: string; value: ProblemVisits };
   questions: { key: string; value: ProblemQuestion; indexes: { 'by-problem': string } };
 }
 let connection: Promise<IDBPDatabase<RecallDB>> | undefined;
 function database() {
   if (!connection) {
-    const opening = openDB<RecallDB>('leetcode-recall', 3, {
+    const opening = openDB<RecallDB>('leetcode-recall', 4, {
       upgrade(db, oldVersion) {
         if (oldVersion < 1) {
           db.createObjectStore('problems', { keyPath: 'id' });
@@ -25,6 +28,7 @@ function database() {
           db.createObjectStore('assets');
         }
         if (oldVersion < 2) { db.createObjectStore('settings'); db.createObjectStore('sessions'); }
+        if (oldVersion < 4) db.createObjectStore('visits', { keyPath: 'problemId' });
         if (oldVersion < 3) db.createObjectStore('questions', { keyPath: 'id' }).createIndex('by-problem', 'problemId');
       },
       blocking() { void opening.then(db => db.close()); connection = undefined; },
@@ -133,4 +137,21 @@ export async function saveProblemDetails(problemId: string, description: string,
   const updated = { ...problem, description: description.trim(), url };
   await tx.store.put(updated); await tx.done;
   return updated;
+}
+
+export async function loadStatistics() {
+  const tx = (await database()).transaction(['reviews', 'visits']);
+  const [reviews, visits] = await Promise.all([tx.objectStore('reviews').getAll(), tx.objectStore('visits').getAll()]);
+  await tx.done;
+  return { reviews, visits };
+}
+
+export async function recordVisit(problemId: string, at = new Date()) {
+  const tx = (await database()).transaction(['problems', 'visits'], 'readwrite');
+  if (!await tx.objectStore('problems').get(problemId)) throw new Error('Problem not found.');
+  const previous = await tx.objectStore('visits').get(problemId);
+  const visit = { problemId, count: (previous?.count ?? 0) + 1, lastVisitedAt: at };
+  await tx.objectStore('visits').put(visit);
+  await tx.done;
+  return visit;
 }

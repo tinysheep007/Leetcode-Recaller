@@ -2,6 +2,11 @@
 
 Keep this file updated as work is completed. Checked means implemented; verification limits are stated explicitly.
 
+## Interface consistency
+
+- [x] Shared responsive headline size, line spacing and top offset across Library, Questions and Stats tabs.
+- [ ] Visual verification of tab headings on the actual iPhone.
+
 ## Foundation and import
 
 - [x] Next.js + TypeScript project, local Git baseline, local preview.
@@ -19,11 +24,12 @@ Keep this file updated as work is completed. Checked means implemented; verifica
 - [x] Read-only description reveal and original problem link on the back; no user-facing description/link editor.
 - [x] Bundle checked problem links and original short summaries; fill missing metadata on import/library load without changing IDs or progress. Actual ZIP: 151 links, 146 descriptions; five source-verification gaps documented in PROBLEM_REFERENCES.md.
 - [ ] Verify reference enrichment and source-link interaction on the deployed app/iPhone.
-- [ ] Verify accessible primary statements for the five remaining description gaps.
+- [ ] Verify accessible primary statements for the five remaining description gaps (deprioritized by user).
 - [ ] Edit solution notes, code languages and section groupings (deferred by user).
 - [x] Show catalog difficulty beside the category on card backs; persist/backfill it locally. The two AlgoMonster cards are Unrated.
 - [ ] Verify difficulty badges on a device/deployed app.
-- [ ] Manual problem creation and difficulty filtering (manual creation deferred by user).
+- [x] Difficulty filter combines with title/category filters across the whole library, resetting pagination.
+- [ ] Manual problem creation (deferred by user).
 - [ ] Import ambiguity/conflict UI, if needed.
 
 ## Reviews and persistence
@@ -41,9 +47,12 @@ Keep this file updated as work is completed. Checked means implemented; verifica
 - [x] Version 1 storage migration preserves existing cards, assets and review history; daily ratings save atomically.
 - [x] Document session rules and tradeoffs in DAILY_REVIEWS.md.
 - [x] Browser verification with disposable cards: resume after reload, lower/increase target, random selection without rating, full daily completion, extra due practice, and offline rating persistence.
-- [ ] Agreed initial activation/staggering policy (currently all imports are immediately due).
-- [ ] Configurable target retention (currently 90%).
-- [ ] Progress/history UI and optional recall note.
+- [x] Unreviewed cards display New, with no assigned review deadline; daily sets offer scheduled reviews first, then new cards. Existing selections remain stable.
+- [x] Keep scheduler target retention fixed at 90%; no settings UI requested.
+- [x] Local Stats view: visits per problem, timestamped rating history, latest-rating category comparisons and least/most comfy sorting. History list is searchable and paginated.
+- [x] Lightweight local category chart with labeled rating segments, unrated coverage and expandable exact counts; no chart dependency or network requests.
+- [ ] Actual browser/iPhone verification of Stats/charts, difficulty filtering and new-card labels.
+- [ ] Optional per-review recall note (not prioritized).
 
 ## Offline and installation
 
@@ -66,7 +75,7 @@ Keep this file updated as work is completed. Checked means implemented; verifica
 - [x] Fake-sender tests for authentication, configuration, recipient restrictions, retries and provider failures.
 - [ ] Verify real Resend delivery to the owner and an active scheduled Vercel run after account setup.
 - [x] Owner-requested Boston 8 a.m. reminder hour with automatic daylight/standard-time slot selection (approximately 8–9 a.m. on Hobby).
-- [ ] Reminder time/settings UI, if included in MVP.
+- [x] Keep reminder settings in Vercel environment variables for personal use; no settings UI planned.
 
 No backup feature or cloud sync is planned. Localhost, deployed sites, browsers and devices have separate local data. Offline caches and IndexedDB survive ordinary restarts but can be removed by clearing site data or browser storage eviction.
 
@@ -81,4 +90,5 @@ No backup feature or cloud sync is planned. Localhost, deployed sites, browsers 
 - [x] Automated migration, validation, multiple-question and reimport/rating preservation tests.
 - [x] Document schema and behavior in PROBLEM_QUESTIONS.md.
 - [ ] Browser and actual iPhone verification of question saving, editing and offline portal reopening (no browser surface available during implementation).
-- [ ] Commit, deploy and verify this feature on the production URL.
+- [x] Commit and push personal questions, pagination, parsing, reference catalog and difficulty (964056b).
+- [ ] Deploy/verify those features and the newer Stats changes on the production URL.

@@ -22,7 +22,7 @@ test('v2 upgrade preserves notes, reviews, settings, sessions and images; questi
 
   assert.deepEqual(await loadQuestions(), []);
   const check = await openDB('leetcode-recall');
-  assert.equal(check.version, 3);
+  assert.equal(check.version, 4);
   assert.deepEqual(await check.get('problems', a.id), a);
   assert.equal(await check.count('reviews'), 1); assert.equal(await check.count('assets'), 1);
   assert.deepEqual(await check.get('sessions', 'daily'), existingSession);

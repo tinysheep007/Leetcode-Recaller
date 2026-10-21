@@ -36,3 +36,9 @@ Schema v3 adds a separate local questions store. The new Questions view and edit
 ## Problem references
 
 Short descriptions, difficulty ratings and source URLs ship in the app bundle and are saved into missing IndexedDB fields on library load. They require no network once the updated production shell is cached. Close all app tabs/windows and reopen after an update has downloaded to activate it. Existing notes, history and questions stay in IndexedDB. Opening a LeetCode/AlgoMonster source page requires connectivity and is outside the offline cache. The actual archive and automated persistence tests pass; device/offline UI verification of enrichment remains pending. See PROBLEM_REFERENCES.md.
+
+## Statistics and visits
+
+Schema v4 adds a local visits store; existing problems, ratings, questions and assets are preserved. Stats, visit counting, rating history and category comparisons use only IndexedDB and are bundled in the offline root app shell. Existing rating history is included; historical visits cannot be reconstructed. Automated upgrade/aggregation tests and production build pass. Interactive iPhone/offline verification of these new controls remains pending. See STATISTICS.md.
+
+Stats category charts use bundled HTML/CSS and local data only; there is no chart library, external image or remote endpoint. Graphs and history pagination operate offline after app caching. App installation/version updates still require downloading the app shell.

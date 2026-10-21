@@ -3,7 +3,7 @@
 ## Behavior
 
 - Daily target defaults to **5**, adjustable to a whole number from 1 to 100 under **Daily target**. The preference stays on this browser/device.
-- A saved daily set is created when the library is opened. It selects due problems by oldest due timestamp first, with ID as a stable tie-breaker. Future-due cards are not included.
+- A saved daily set is created when the library is opened. It selects previously rated, due problems by oldest due timestamp first, with ID as a stable tie-breaker, then fills open slots with unreviewed problems in stable ID order. Future-due reviewed cards are not included. New problems have no user-facing review date until first rated; the scheduler's initial due timestamp is only an internal placeholder.
 - The set is stable across refreshes and restarts. **Start/Continue daily review** opens its first unfinished card. Reveal state is not saved; resumed cards open on the front with answers hidden.
 - A rating marks a selected card completed once. The card's FSRS update, review event, and daily completion are saved in one IndexedDB transaction.
 - Rating a selected card from the library or Random also completes its pending daily obligation. Ratings on other cards do not replace the daily set or artificially increase its completion count.
@@ -13,10 +13,10 @@
 ## Day boundaries and target changes
 
 - Day keys use the device's local calendar, not UTC. Traveling or changing the device date/timezone affects which day the app sees.
-- On the next local day, unfinished selected cards are carried forward in their existing order. Remaining slots are filled from the oldest due cards. No review logs or due obligations are deleted.
+- On the next local day, unfinished selected cards are carried forward in their existing order. Remaining slots are filled from the oldest scheduled reviews, then new problems. No review logs or due obligations are deleted.
 - If carried selections exceed the target, they all remain available; the target is a soft workload goal.
-- Increasing the target adds due cards to available slots immediately. Lowering it preserves today's existing selections and applies to tomorrow's fill limit. The UI explains this behavior.
-- If too few cards are due, select only those available. Cards becoming due later may fill remaining target slots, while existing selections stay fixed.
+- Increasing the target adds scheduled or new cards to available slots immediately. Lowering it preserves today's existing selections and applies to tomorrow's fill limit. The UI explains this behavior.
+- If too few scheduled or new cards are available, select only those available. Cards becoming due later may fill remaining target slots, while existing selections stay fixed.
 - The app refreshes on window focus, visibility changes and every 30 seconds while mounted. A day change returns an active session to the library. A stale daily rating from a different day or an already-completed daily card is rejected before a log is written.
 
 ## Extra and random practice

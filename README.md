@@ -47,3 +47,5 @@ The optional real-export test is run with `RECALL_TEST_ARCHIVE=questions.zip npm
 - [Personal questions and database design](docs/PROBLEM_QUESTIONS.md)
 - [Email reminder setup and limitations](docs/EMAIL_REMINDERS.md)
 - [Offline design, iPhone installation, and production testing](docs/OFFLINE.md)
+
+The Stats tab shows local visit counts, timestamped recall ratings and category comparisons based on each problem's latest rating. Visit tracking begins with this update. Difficulty filtering works alongside library search/category filters. Unreviewed problems display New rather than a deadline; daily sets prioritize scheduled reviews before offering new problems. See `docs/STATISTICS.md`.

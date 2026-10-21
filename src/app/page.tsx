@@ -1,7 +1,8 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
-import { importProblems, loadAssets, loadReviewState, loadQuestions, saveRating, type Problem, type RecallRating, type ProblemQuestion } from '@/lib/database';
+import { importProblems, loadAssets, loadReviewState, loadQuestions, loadStatistics, recordVisit, saveRating, type Problem, type RecallRating, type ProblemQuestion, type SavedReview, type ProblemVisits } from '@/lib/database';
+import Statistics from '@/components/statistics';
 import ProblemQuestions from '@/components/problem-questions';
 import { parseMarkdown, readArchive } from '@/lib/import';
 import { dueProblems, pendingIds, randomProblemId, type DailySession } from '@/lib/daily';
@@ -29,6 +30,10 @@ function LibraryPages({ page, pageCount, total, position, onPage }: { page: numb
 }
 export default function Home() {
   const [problems, setProblems] = useState<Problem[]>([]), [assets, setAssets] = useState<Record<string, string>>({});
+  const [stats, setStats] = useState(false);
+  const [activity, setActivity] = useState<{ reviews: SavedReview[]; visits: ProblemVisits[] }>({ reviews: [], visits: [] });
+  const lastVisitId = useRef<string | undefined>(undefined);
+  const [difficulty, setDifficulty] = useState('');
   const [questions, setQuestions] = useState<ProblemQuestion[]>([]);
   const [portal, setPortal] = useState(false), [questionFocus, setQuestionFocus] = useState(false);
   const [questionQuery, setQuestionQuery] = useState('');
@@ -49,7 +54,8 @@ export default function Home() {
   const assetUrls = useRef<Record<string, string>>({});
   const current = problems.find(p => p.id === activeIds[0]);
   const refresh = useCallback(async () => {
-    const [state, savedQuestions] = await Promise.all([loadReviewState(), loadQuestions()]);
+    const [state, savedQuestions, savedActivity] = await Promise.all([loadReviewState(), loadQuestions(), loadStatistics()]);
+    setActivity(savedActivity);
     setQuestions(savedQuestions);
     setProblems(state.problems); setDaily(state.daily); setTarget(state.target); setNow(Date.now());
     if (targetRef.current !== state.target) { setTargetDraft(String(state.target)); targetRef.current = state.target; }
@@ -73,10 +79,16 @@ export default function Home() {
     document.addEventListener('visibilitychange', visible);
     return () => { clearInterval(timer); window.removeEventListener('focus', update); document.removeEventListener('visibilitychange', visible); };
   }, [ready, refresh]);
+  useEffect(() => {
+    const id = current?.id;
+    if (lastVisitId.current === id) return;
+    lastVisitId.current = id;
+    if (id) void recordVisit(id).then(() => loadStatistics()).then(setActivity).catch(() => setError('Could not save this visit. Your review progress is unchanged.'));
+  }, [current?.id]);
   const due = dueProblems(problems, new Date(now));
   const withQuestions = problems.filter(p => questions.some(q => q.problemId === p.id));
   const questionMatches = withQuestions.filter(p => p.title.toLowerCase().includes(questionQuery.toLowerCase()) || questions.some(q => q.problemId === p.id && q.text.toLowerCase().includes(questionQuery.toLowerCase())));
-  const filtered = problems.filter(p => p.title.toLowerCase().includes(query.toLowerCase()) && (!category || p.category === category));
+  const filtered = problems.filter(p => p.title.toLowerCase().includes(query.toLowerCase()) && (!category || p.category === category) && (!difficulty || (p.difficulty || 'Unrated') === difficulty));
   const pageCount = Math.max(1, Math.ceil(filtered.length / PROBLEMS_PER_PAGE));
   const currentPage = Math.min(libraryPage, pageCount - 1);
   const pageProblems = filtered.slice(currentPage * PROBLEMS_PER_PAGE, (currentPage + 1) * PROBLEMS_PER_PAGE);
@@ -121,7 +133,7 @@ export default function Home() {
     try {
       const state = await loadReviewState(new Date(), Number(targetDraft));
       setDaily(state.daily); setTarget(state.target); targetRef.current = state.target; setTargetDraft(String(state.target));
-      setMessage('Daily target saved. Increasing it adds due cards; lowering it keeps today’s existing selections.');
+      setMessage('Daily target saved. Increasing it adds available cards; lowering it keeps today’s existing selections.');
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not save the daily target.'); }
     finally { setBusy(false); }
   }
@@ -129,7 +141,7 @@ export default function Home() {
     const id = randomProblemId(problems);
     if (id) start([id], 'random');
   }
-  return <main><header><a className="brand" href="/">recall<span>.</span></a><nav className="header-nav" aria-label="Main navigation"><button className="text-button" disabled={busy} aria-pressed={!portal && !current} onClick={() => { start([]); setPortal(false); }}>Library</button><button className="text-button" disabled={!ready || busy} aria-pressed={portal && !current} onClick={() => { start([]); setPortal(true); }}>Questions ({withQuestions.length})</button></nav></header>
+  return <main><header><a className="brand" href="/">recall<span>.</span></a><nav className="header-nav" aria-label="Main navigation"><button className="text-button" disabled={busy} aria-pressed={!portal && !stats && !current} onClick={() => { start([]); setPortal(false); setStats(false); }}>Library</button><button className="text-button" disabled={!ready || busy} aria-pressed={portal && !stats && !current} onClick={() => { start([]); setPortal(true); setStats(false); }}>Questions ({withQuestions.length})</button><button className="text-button" disabled={!ready || busy} aria-pressed={stats && !current} onClick={() => { start([]); setPortal(false); setStats(true); }}>Stats</button></nav></header>
     <input ref={input} hidden type="file" accept=".zip,.md,.markdown" onChange={e => { const file = e.target.files?.[0]; if (file) void upload(file); }} />
     {error && <p role="alert" className="error">{error}</p>}{message && <p role="status" className="notice">{message}</p>}
     {!ready ? <p className="intro">{error ? 'Local storage is unavailable.' : 'Opening your library…'}</p> : current ? <section className="review-area">
@@ -144,36 +156,36 @@ export default function Home() {
           <div className="ratings">{(['Forgot', 'Rusty', 'Comfy'] as const).map(r => <button disabled={busy} key={r} onClick={() => void rate(r)}>{r}</button>)}</div>
         </>}
       </article>
-    </section> : portal ? <section className="questions-portal" aria-labelledby="questions-title">
-      <p className="eyebrow">YOUR FOLLOW-UP LIST</p><h1 id="questions-title">Questions to revisit.</h1>
+    </section> : stats ? <Statistics problems={problems} reviews={activity.reviews} visits={activity.visits} /> : portal ? <section className="questions-portal tab-panel" aria-labelledby="questions-title">
+      <p className="eyebrow">YOUR FOLLOW-UP LIST</p><h1 className="tab-title" id="questions-title">Questions to revisit.</h1>
       <p className="subtitle">{questions.length} saved questions across {withQuestions.length} problems. Saved on this device.</p>
       <input className="question-search" type="search" aria-label="Search saved questions" placeholder="Search problem titles or your questions…" value={questionQuery} onChange={e => setQuestionQuery(e.target.value)} />
       {!withQuestions.length && <div className="empty-state"><h3>Keep track of what’s unclear.</h3><p>Open a problem, flip to its back, then open My questions to write your first question.</p><button className="secondary" onClick={() => setPortal(false)}>Browse library</button></div>}
       {questionMatches.map(problem => <article key={problem.id} className="question-group"><div className="section-heading"><h2>{problem.title}</h2><button className="secondary" onClick={() => { start([problem.id]); setQuestionFocus(true); setBack(true); }}>Open problem</button></div><ul>{questions.filter(q => q.problemId === problem.id).map(q => <li key={q.id}>{q.text}</li>)}</ul></article>)}
       {!!withQuestions.length && !questionMatches.length && <p className="muted">No saved questions match your search.</p>}
     </section> : <>
-      <section className="intro"><p className="eyebrow">SOLVED ONCE. REMEMBER LONGER.</p><h1>A little recall.<br />A lot more confidence.</h1><p className="subtitle">Revisit the problems you’ve solved, with your own notes and the answers tucked away.</p>
+      <section className="intro tab-panel"><p className="eyebrow">SOLVED ONCE. REMEMBER LONGER.</p><h1 className="tab-title">A little recall.<br />A lot more confidence.</h1><p className="subtitle">Revisit the problems you’ve solved, with your own notes and the answers tucked away.</p>
         {daily && <section className="daily-panel" aria-labelledby="daily-title">
           <div className="section-heading"><h2 id="daily-title">Today’s review</h2><span className="count">{daily.day}</span></div>
           <div className="daily-progress"><strong>{daily.completedIds.length}<span> / {daily.selectedIds.length} completed</span></strong><span className="muted">Daily target: {target}</span></div>
           <progress aria-label="Daily review progress" max={daily.selectedIds.length || 1} value={daily.completedIds.length} />
-          <p className="muted small">{!problems.length ? 'Import your notes to create your first daily set.' : dailyRemaining.length ? `${dailyRemaining.length} left in your saved set. Oldest due cards first.` : daily.selectedIds.length ? 'Daily set complete. You can stop here or keep practicing.' : 'You’re caught up. No cards are due right now.'}</p>
+          <p className="muted small">{!problems.length ? 'Import your notes to create your first daily set.' : dailyRemaining.length ? `${dailyRemaining.length} left in your saved set. Scheduled reviews first, then new problems.` : daily.selectedIds.length ? 'Daily set complete. You can stop here or keep practicing.' : 'You’re caught up. No reviews or new problems are waiting.'}</p>
           {daily.selectedIds.length > target && <p className="muted small">Your saved set is larger than your target. Existing selections stay available until completed.</p>}
           <div className="actions">
             <button className="primary" disabled={!dailyRemaining.length || busy} onClick={() => void beginDaily()}>{daily.completedIds.length ? 'Continue daily review' : 'Start daily review'} · {dailyRemaining.length}</button>
             <button className="secondary" disabled={!problems.length || busy} onClick={randomPractice}>Random problem ↝</button>
             {!dailyRemaining.length && !!due.length && <button className="text-button" disabled={busy} onClick={() => start(due.slice(0, target).map(p => p.id), 'extra')}>Extra due practice · {Math.min(due.length, target)}</button>}
           </div>
-          <p className="muted small">{due.length} due in your library. Anything outside today’s set stays due. Random practice picks from your entire library; only rating it changes its schedule.</p>
-          <details className="daily-settings"><summary>Daily target</summary><form onSubmit={changeTarget}><label htmlFor="daily-target">Problems per day</label><div className="actions"><input id="daily-target" type="number" min="1" max="100" step="1" required value={targetDraft} onChange={e => setTargetDraft(e.target.value)} /><button className="secondary" disabled={busy} type="submit">Save target</button></div><p className="muted small">Unfinished cards carry forward at local midnight. Raising your target adds due cards; lowering it doesn’t remove today’s saved cards.</p></form></details>
+          <p className="muted small">{due.length} scheduled reviews ready · {problems.filter(p => p.schedule.reps === 0).length} new problems. New problems have no review date until you rate them. Random practice picks from your entire library; only rating it changes its schedule.</p>
+          <details className="daily-settings"><summary>Daily target</summary><form onSubmit={changeTarget}><label htmlFor="daily-target">Problems per day</label><div className="actions"><input id="daily-target" type="number" min="1" max="100" step="1" required value={targetDraft} onChange={e => setTargetDraft(e.target.value)} /><button className="secondary" disabled={busy} type="submit">Save target</button></div><p className="muted small">Unfinished cards carry forward at local midnight. Raising your target adds scheduled or new cards; lowering it doesn’t remove today’s saved cards.</p></form></details>
         </section>}
       </section>
       <section className="workspace" aria-labelledby="library-title"><div className="section-heading"><h2 id="library-title" ref={libraryHeading} tabIndex={-1}>Your library <span className="count">({problems.length})</span></h2><button className="primary" disabled={busy} onClick={() => input.current?.click()}>{busy ? 'Importing…' : 'Import notes +'}</button></div>
         {!problems.length ? <div className="empty-state"><div className="card-mark" aria-hidden="true">{'{ }'}</div><h3>Your next review starts here.</h3><p>Choose your Notion Markdown ZIP or an individual Markdown file. Missing fields are welcome.</p><span className="status">Your notes and reviews stay in this browser</span></div> : <>
-          <div className="filters"><input aria-label="Search problem titles" placeholder="Search problems…" value={query} onChange={e => { setQuery(e.target.value); setLibraryPage(0); }} /><select aria-label="Filter by category" value={category} onChange={e => { setCategory(e.target.value); setLibraryPage(0); }}><option value="">All categories</option>{Array.from(new Set(problems.map(p => p.category))).sort().map(c => <option key={c}>{c}</option>)}</select></div>
+          <div className="filters"><input aria-label="Search problem titles" placeholder="Search problems…" value={query} onChange={e => { setQuery(e.target.value); setLibraryPage(0); }} /><select aria-label="Filter by category" value={category} onChange={e => { setCategory(e.target.value); setLibraryPage(0); }}><option value="">All categories</option>{Array.from(new Set(problems.map(p => p.category))).sort().map(c => <option key={c}>{c}</option>)}</select><select aria-label="Filter by difficulty" value={difficulty} onChange={e => { setDifficulty(e.target.value); setLibraryPage(0); }}><option value="">All difficulties</option>{['Easy', 'Medium', 'Hard', 'Unrated'].map(d => <option key={d}>{d}</option>)}</select></div>
           <p className="muted small">Opening any problem lets you review early. A rating updates its next review date. Reimport skips existing cards.</p>
           {!!filtered.length && <LibraryPages page={currentPage} pageCount={pageCount} total={filtered.length} position="top" onPage={changeLibraryPage} />}
-          <div className="problem-list">{pageProblems.map(p => <button className="problem-row" key={p.id} onClick={() => start([p.id])}><span><strong>{p.title}</strong><small>{p.category}</small></span><span className="count">{+new Date(p.schedule.due) <= now ? 'Due now' : new Date(p.schedule.due).toLocaleDateString()} →</span></button>)}</div>
+          <div className="problem-list">{pageProblems.map(p => <button className="problem-row" key={p.id} onClick={() => start([p.id])}><span><strong>{p.title}</strong><small>{p.category}</small></span><span className="count">{p.schedule.reps === 0 ? 'New' : +new Date(p.schedule.due) <= now ? 'Ready to review' : `Next review ${new Date(p.schedule.due).toLocaleDateString()}`} →</span></button>)}</div>
           {!!filtered.length && <LibraryPages page={currentPage} pageCount={pageCount} total={filtered.length} position="bottom" onPage={changeLibraryPage} />}
           {!filtered.length && <p className="muted">No problems match your search.</p>}
         </>}
