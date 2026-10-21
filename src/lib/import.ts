@@ -1,6 +1,8 @@
 import { strFromU8, unzipSync } from 'fflate';
+import type { Difficulty } from './problem-references';
 export type Section = { id: string; title: string; content: string };
-export type ImportedProblem = { id: string; title: string; category: string; sourcePath: string; original: string; description: string; url: string; sections: Section[] };
+export type ImportedProblem = { id: string; title: string; category: string; difficulty?: Difficulty; sourcePath: string; original: string; description: string; url: string; sections: Section[] };
+export const PARSER_VERSION = 2;
 const clean = (s: string) => s.replace(/\s+[a-f0-9]{32}$/i, '').trim();
 export function parseMarkdown(path: string, original: string): ImportedProblem {
   const lines = original.replace(/\r\n/g, '\n').split('\n');
@@ -10,11 +12,30 @@ export function parseMarkdown(path: string, original: string): ImportedProblem {
   let approach = '', label = 'Notes', buffer: string[] = [], fence = '', code: string[] = [], skippedTitle = false;
   const push = (title: string, content: string) => { if (content.trim()) sections.push({ id: String(sections.length), title, content: content.trim() }); };
   const flush = () => { push(label, buffer.join('\n')); buffer = []; };
+  const finishCode = (closed: boolean) => {
+    // Keep the full code untouched and additionally expose explicit complexity comments.
+    push(`${approach ? approach + ' ' : ''}Code`, code.join('\n'));
+    const body = code.slice(1, closed ? -1 : undefined);
+    let start = body.length;
+    while (start > 0 && (/^\s*#/.test(body[start - 1]) || !body[start - 1].trim())) start--;
+    let field = '', notes: string[] = [];
+    const save = () => { if (field) push(`${approach ? approach + ' ' : ''}${field}`, notes.join('\n')); };
+    for (const line of body.slice(start)) {
+      const comment = line.replace(/^\s*#\s?/, '');
+      const match = line.match(/^\s*#\s*(runtime|run|time|space)(?:\s+complexity)?(?:\s*[:=]\s*|\s+)(\S.*)$/i);
+      if (match) {
+        save(); field = /^space$/i.test(match[1]) ? 'Space complexity' : 'Runtime'; notes = [comment];
+      } else if (field) notes.push(comment);
+    }
+    save();
+    fence = ''; code = [];
+  };
+
   for (const line of lines) {
     if (!skippedTitle && /^#\s/.test(line)) { skippedTitle = true; continue; }
     if (fence) {
       code.push(line);
-      if (new RegExp(`^\\s*${fence[0]}{${fence.length},}\\s*$`).test(line)) { push(`${approach ? approach + ' ' : ''}Code`, code.join('\n')); fence = ''; code = []; }
+      if (new RegExp(`^\\s*${fence[0]}{${fence.length},}\\s*$`).test(line)) { finishCode(true); }
       continue;
     }
     const opening = line.match(/^\s*(`{3,}|~{3,})/);
@@ -26,7 +47,7 @@ export function parseMarkdown(path: string, original: string): ImportedProblem {
     if (complexity) { flush(); push(`${approach ? approach + ' ' : ''}${/^space/i.test(complexity[1]) ? 'Space complexity' : 'Runtime'}`, line); continue; }
     buffer.push(line);
   }
-  if (fence) push(`${approach ? approach + ' ' : ''}Code`, code.join('\n'));
+  if (fence) finishCode(false);
   flush();
   for (const [title, pattern] of [['Runtime', /runtime|time complexity/i], ['Space complexity', /space complexity/i]] as const) {
     if (!sections.some(s => pattern.test(s.title))) sections.push({ id: String(sections.length), title, content: '' });

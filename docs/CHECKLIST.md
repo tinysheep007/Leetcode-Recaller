@@ -8,12 +8,22 @@ Keep this file updated as work is completed. Checked means implemented; verifica
 - [x] Notion ZIP and individual Markdown import in the browser.
 - [x] Exclude category/index pages; derive categories from folders.
 - [x] Preserve original Markdown, fenced code languages and supported images.
+- [x] Render the Original imported Markdown disclosure as formatted Markdown with local images, while retaining the unchanged source in storage.
 - [x] Missing-field reveal placeholders without generating answers.
 - [x] Skip existing identities on reimport; preserve review history.
 - [x] Search titles and filter categories.
+- [x] Paginate the library with 10 problems per page, previous/next and direct page selection; filters search the full library and reset to page one.
 - [x] Document exact parsing rules and limitations in PARSING_RULES.md.
-- [ ] Edit notes, descriptions, code languages and section groupings (deferred by user).
-- [ ] Manual problem creation and difficulty metadata/filtering (manual creation deferred by user).
+- [x] Extract explicit trailing Python-style runtime/run/time/space comments into approach-specific complexity sections while preserving code.
+- [x] Refresh legacy parsed sections once from preserved original Markdown without changing scheduling, history or personal questions.
+- [x] Read-only description reveal and original problem link on the back; no user-facing description/link editor.
+- [x] Bundle checked problem links and original short summaries; fill missing metadata on import/library load without changing IDs or progress. Actual ZIP: 151 links, 146 descriptions; five source-verification gaps documented in PROBLEM_REFERENCES.md.
+- [ ] Verify reference enrichment and source-link interaction on the deployed app/iPhone.
+- [ ] Verify accessible primary statements for the five remaining description gaps.
+- [ ] Edit solution notes, code languages and section groupings (deferred by user).
+- [x] Show catalog difficulty beside the category on card backs; persist/backfill it locally. The two AlgoMonster cards are Unrated.
+- [ ] Verify difficulty badges on a device/deployed app.
+- [ ] Manual problem creation and difficulty filtering (manual creation deferred by user).
 - [ ] Import ambiguity/conflict UI, if needed.
 
 ## Reviews and persistence
@@ -59,3 +69,16 @@ Keep this file updated as work is completed. Checked means implemented; verifica
 - [ ] Reminder time/settings UI, if included in MVP.
 
 No backup feature or cloud sync is planned. Localhost, deployed sites, browsers and devices have separate local data. Offline caches and IndexedDB survive ordinary restarts but can be removed by clearing site data or browser storage eviction.
+
+
+## Personal problem questions
+
+- [x] Add multiple plain-text questions on a problem's back, behind My questions.
+- [x] Edit saved personal questions without altering imported notes or scheduling.
+- [x] Questions portal groups all saved questions by problem and supports searching titles/text.
+- [x] Open a problem from the portal with personal questions expanded and answers collapsed.
+- [x] IndexedDB v3 questions store with by-problem index; additive migration preserves existing stores.
+- [x] Automated migration, validation, multiple-question and reimport/rating preservation tests.
+- [x] Document schema and behavior in PROBLEM_QUESTIONS.md.
+- [ ] Browser and actual iPhone verification of question saving, editing and offline portal reopening (no browser surface available during implementation).
+- [ ] Commit, deploy and verify this feature on the production URL.

@@ -28,3 +28,11 @@ Imported notes, assets and FSRS history remain in IndexedDB, separate from the a
 ## Verification performed
 
 The production app at port 3001 reached Ready for offline use and imported 151 cards. Its server was stopped and its tab closed. A new tab loaded the app and imported library without the server; BFS code revealed successfully. A separate disposable Markdown test card was imported and rated while the server remained stopped; its scheduled state persisted after reload. This test origin contains that extra test card. No real problem rating was logged. The actual iPhone airplane-mode/install test and deployment update lifecycle remain pending in CHECKLIST.md.
+
+## Personal questions
+
+Schema v3 adds a separate local questions store. The new Questions view and editor are part of the root page bundle and are included by the production precache. Question writes use IndexedDB only. Automated storage tests pass; interactive offline verification of this particular feature still needs a browser/device check, as recorded in CHECKLIST.md.
+
+## Problem references
+
+Short descriptions, difficulty ratings and source URLs ship in the app bundle and are saved into missing IndexedDB fields on library load. They require no network once the updated production shell is cached. Close all app tabs/windows and reopen after an update has downloaded to activate it. Existing notes, history and questions stay in IndexedDB. Opening a LeetCode/AlgoMonster source page requires connectivity and is outside the offline cache. The actual archive and automated persistence tests pass; device/offline UI verification of enrichment remains pending. See PROBLEM_REFERENCES.md.

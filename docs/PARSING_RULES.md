@@ -16,8 +16,8 @@ Implementation: `src/lib/import.ts`. These are deterministic text rules, not AI 
 | Input | Result |
 | --- | --- |
 | First `# ` title | Used as card title, omitted from the parsed note body |
-| Opening fence of 3+ backticks or tildes | Starts a separate code section; headings and complexity text inside it are not parsed |
-| Matching closing fence (same character, at least the opening length) | Ends that code section |
+| Opening fence of 3+ backticks or tildes | Starts a separate code section; code is preserved, with trailing Python-style complexity comments additionally extracted |
+| Matching closing fence (same character, at least the opening length) | Ends that code section and checks its trailing comment block |
 | `##` through `######` heading | Flushes preceding notes and sets the current section label and approach |
 | A line beginning with optional `-`/`*` and `follow up`, `follow-up` or `followup` | Starts a Follow-up section and retains the line |
 | A line beginning with optional `-`/`*`, then `runtime`, `time`, `time complexity`, `space`, or `space complexity`, then `:` or `=` | Creates a Runtime or Space complexity section for the current approach |
@@ -29,14 +29,32 @@ For code labels, the current heading loses a trailing `Notes`, `Note`, `Code`, o
 
 Code language labels are preserved exactly, including mistakes such as `sql` around Python. An unclosed code fence is retained through the end of the file. Sections receive sequential IDs; their labels do not have to be unique.
 
+## Complexity comments at the end of code
+
+The final contiguous block of comment-only (`#`) and blank lines inside each code fence is checked for explicit complexity labels:
+
+```python
+# runtime: O(M * N) M is row num; N is col num
+# run: O(N)
+# time complexity = O(N)
+# space O(N)
+# space: O(1)
+```
+
+Recognized labels are `runtime`, `run`, `time`, and `space`, optionally followed by `complexity`. Matching is case insensitive, indentation is allowed, and the label/value separator may be `:`, `=`, or whitespace. Comments following a recognized label are retained as explanation until the next recognized label. The leading comment marker is removed only in the separate display section so it isn't rendered as a Markdown heading.
+
+The entire original code block, including these comments and its language fence, remains unchanged. Runtime/space sections are additional revealable copies attached to the current approach. This applies even to a mislabeled fence such as `sql`; no code is rewritten or analyzed for correctness. Interior comments followed by executable lines, inline comments after code, and missing complexity values are not extracted. This is a text heuristic, not Python syntax analysis.
+
+Parser version 2 refreshes the parsed sections of older imported records from their saved original Markdown on library load, once per record. Problem identity, original source, description, FSRS state, review logs, personal questions and other fields are preserved. New imports are marked with the current parser version. Repeat ZIP imports still skip existing identities.
+
 ## Missing data and preservation
 
 - Empty Runtime and Space complexity sections are added if no section label of that type exists anywhere in the card.
 - Each named approach with a Code section also gets an empty Runtime and Space complexity section if those exact labels are missing. These placeholders are appended, not inferred from code.
 - Missing content is stored as an empty string. **Not provided yet** appears only after revealing it.
-- Descriptions are currently always empty; the importer does not yet recognize statement headings. Difficulty is not extracted. Neither is guessed from solution notes.
+- Imported descriptions initialize empty; the importer does not yet recognize statement headings. Descriptions and original links are read-only in the UI; the separate bundled reference catalog fills missing fields when a verified title match is available (see PROBLEM_REFERENCES.md). The parser itself does not fetch or infer statements. These fields are preserved by reimport skips and parser-version updates. Difficulty is not extracted from notes; the separate catalog supplies it for known LeetCode titles. Neither descriptions nor difficulty are guessed from solution notes.
 - The complete original Markdown string is retained unchanged. Parsed sections normalize CRLF line endings and trim surrounding whitespace.
-- Unknown text is retained, but automatic grouping can be wrong. The original Markdown disclosure is the way to inspect the source until the editor is implemented.
+- Unknown text is retained, but automatic grouping can be wrong. The Original imported Markdown disclosure renders the complete unparsed note as formatted Markdown, including local image references, until the editor is implemented. The stored source string remains unchanged.
 
 ## Identity and repeat imports
 

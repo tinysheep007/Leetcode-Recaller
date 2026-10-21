@@ -1,0 +1,38 @@
+import 'fake-indexeddb/auto';
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { openDB } from 'idb';
+import { importProblems, loadProblems, loadQuestions, loadReviewState, saveProblemDetails, saveQuestion, saveRating } from '../src/lib/database';
+import { parseMarkdown } from '../src/lib/import';
+
+test('description and link persist without changing identity, notes, questions, or review state', async () => {
+  const problem = parseMarkdown('Graph/Fixture.md', '# Fixture\n\nOriginal user notes');
+  await importProblems([problem], []);
+  await loadReviewState();
+  await saveRating(problem.id, 'Comfy');
+  const question = await saveQuestion(problem.id, 'Why this approach?');
+  const before = (await loadProblems())[0];
+  const db = await openDB('leetcode-recall');
+  const session = await db.get('sessions', 'daily'), logs = await db.getAll('reviews');
+  const edited = await saveProblemDetails(problem.id, '  ## Statement\nFind the value.\n\n**Example:** 42  ', 'https://leetcode.com/problems/example/');
+  assert.equal(edited.description, '## Statement\nFind the value.\n\n**Example:** 42');
+  assert.equal(edited.url, 'https://leetcode.com/problems/example/');
+  assert.equal(edited.id, before.id);
+  assert.equal(edited.original, before.original);
+  assert.deepEqual(edited.sections, before.sections);
+  assert.deepEqual(edited.schedule, before.schedule);
+  assert.deepEqual(await db.get('sessions', 'daily'), session);
+  assert.deepEqual(await db.getAll('reviews'), logs);
+  assert.deepEqual(await loadQuestions(problem.id), [question]);
+  assert.deepEqual((await loadProblems())[0], edited);
+  await importProblems([problem], []);
+  assert.deepEqual((await loadProblems())[0], edited);
+  for (const url of ['javascript:alert(1)', 'data:text/html,bad', 'https://user:pass@example.com/']) await assert.rejects(() => saveProblemDetails(problem.id, 'New', url));
+  await assert.rejects(() => saveProblemDetails(problem.id, 'x'.repeat(100001), ''));
+  assert.deepEqual((await loadProblems())[0], edited);
+  await assert.rejects(() => saveProblemDetails('missing', 'Statement', ''));
+  const cleared = await saveProblemDetails(problem.id, '', '');
+  assert.equal(cleared.description, ''); assert.equal(cleared.url, '');
+  assert.deepEqual(cleared.schedule, before.schedule);
+  db.close();
+});

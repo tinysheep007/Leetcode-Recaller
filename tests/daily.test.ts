@@ -63,7 +63,7 @@ test('v1 storage upgrades without losing data; daily completion and rating commi
   assert.equal(state.problems.length, 8);
   assert.equal(state.target, 2);
   assert.deepEqual(state.daily.selectedIds, ['0', '1']);
-  const check = await openDB('leetcode-recall', 2);
+  const check = await openDB('leetcode-recall');
   assert.equal(await check.count('assets'), 1);
   assert.equal(await check.count('reviews'), 1);
   await saveRating('0', 'Comfy', state.daily.day, day);

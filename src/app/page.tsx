@@ -1,21 +1,41 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
-import { importProblems, loadAssets, loadReviewState, saveRating, type Problem, type RecallRating } from '@/lib/database';
+import { importProblems, loadAssets, loadReviewState, loadQuestions, saveRating, type Problem, type RecallRating, type ProblemQuestion } from '@/lib/database';
+import ProblemQuestions from '@/components/problem-questions';
 import { parseMarkdown, readArchive } from '@/lib/import';
 import { dueProblems, pendingIds, randomProblemId, type DailySession } from '@/lib/daily';
-function Reveal({ title, content, assets, path }: { title: string; content: string; assets: Record<string, string>; path: string }) {
-  const [open, setOpen] = useState(false);
-  return <section className="reveal"><button className="reveal-toggle" aria-expanded={open} onClick={() => setOpen(!open)}><span>{title}</span><span>{open ? 'Hide −' : 'Reveal +'}</span></button>{open && <div className="markdown">{content.trim() ? <Markdown components={{ img: ({ src, alt }) => {
+function NoteMarkdown({ content, assets, path }: { content: string; assets: Record<string, string>; path: string }) {
+  return <div className="markdown">{content.trim() ? <Markdown components={{ img: ({ src, alt }) => {
     const source = typeof src === 'string' ? src : ''; let resolved = '';
     try { resolved = decodeURIComponent(new URL(source, `https://import.local/${path}`).pathname.slice(1)); } catch { /* Render missing assets as text. */ }
     return assets[resolved] ? <img src={assets[resolved]} alt={alt || 'Imported note illustration'} /> : <p className="muted">Image: {alt || source} (not available in this import)</p>;
-  } }}>{content}</Markdown> : <p className="muted">Not provided yet</p>}</div>}</section>;
+  } }}>{content}</Markdown> : <p className="muted">Not provided yet</p>}</div>;
+}
+function Reveal({ title, content, assets, path }: { title: string; content: string; assets: Record<string, string>; path: string }) {
+  const [open, setOpen] = useState(false);
+  return <section className="reveal"><button className="reveal-toggle" aria-expanded={open} onClick={() => setOpen(!open)}><span>{title}</span><span>{open ? 'Hide −' : 'Reveal +'}</span></button>{open && <NoteMarkdown content={content} assets={assets} path={path} />}</section>;
+}
+const PROBLEMS_PER_PAGE = 10;
+function LibraryPages({ page, pageCount, total, position, onPage }: { page: number; pageCount: number; total: number; position: string; onPage: (page: number) => void }) {
+  return <nav className="pagination" aria-label={`Library pages (${position})`}>
+    <span className="count" role="status">Showing {page * PROBLEMS_PER_PAGE + 1}–{Math.min((page + 1) * PROBLEMS_PER_PAGE, total)} of {total}</span>
+    <div className="pagination-controls">
+      {page > 0 && <button className="secondary" onClick={() => onPage(page - 1)}>← Previous</button>}
+      <select aria-label={`Problem page (${position})`} value={page} onChange={event => onPage(Number(event.target.value))}>{Array.from({ length: pageCount }, (_, index) => <option key={index} value={index}>Page {index + 1} of {pageCount}</option>)}</select>
+      {page < pageCount - 1 && <button className="secondary" onClick={() => onPage(page + 1)}>Next →</button>}
+    </div>
+  </nav>;
 }
 export default function Home() {
   const [problems, setProblems] = useState<Problem[]>([]), [assets, setAssets] = useState<Record<string, string>>({});
+  const [questions, setQuestions] = useState<ProblemQuestion[]>([]);
+  const [portal, setPortal] = useState(false), [questionFocus, setQuestionFocus] = useState(false);
+  const [questionQuery, setQuestionQuery] = useState('');
   const [ready, setReady] = useState(false), [busy, setBusy] = useState(false);
   const [error, setError] = useState(''), [message, setMessage] = useState('');
+  const [libraryPage, setLibraryPage] = useState(0);
+  const libraryHeading = useRef<HTMLHeadingElement>(null);
   const [query, setQuery] = useState(''), [category, setCategory] = useState('');
   const [queue, setQueue] = useState<string[]>([]), [back, setBack] = useState(false), [now, setNow] = useState(0);
   const [daily, setDaily] = useState<DailySession | null>(null);
@@ -29,7 +49,8 @@ export default function Home() {
   const assetUrls = useRef<Record<string, string>>({});
   const current = problems.find(p => p.id === activeIds[0]);
   const refresh = useCallback(async () => {
-    const state = await loadReviewState();
+    const [state, savedQuestions] = await Promise.all([loadReviewState(), loadQuestions()]);
+    setQuestions(savedQuestions);
     setProblems(state.problems); setDaily(state.daily); setTarget(state.target); setNow(Date.now());
     if (targetRef.current !== state.target) { setTargetDraft(String(state.target)); targetRef.current = state.target; }
     if (dayRef.current && dayRef.current !== state.daily.day) { setMode(null); setQueue([]); setBack(false); }
@@ -53,7 +74,18 @@ export default function Home() {
     return () => { clearInterval(timer); window.removeEventListener('focus', update); document.removeEventListener('visibilitychange', visible); };
   }, [ready, refresh]);
   const due = dueProblems(problems, new Date(now));
+  const withQuestions = problems.filter(p => questions.some(q => q.problemId === p.id));
+  const questionMatches = withQuestions.filter(p => p.title.toLowerCase().includes(questionQuery.toLowerCase()) || questions.some(q => q.problemId === p.id && q.text.toLowerCase().includes(questionQuery.toLowerCase())));
   const filtered = problems.filter(p => p.title.toLowerCase().includes(query.toLowerCase()) && (!category || p.category === category));
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PROBLEMS_PER_PAGE));
+  const currentPage = Math.min(libraryPage, pageCount - 1);
+  const pageProblems = filtered.slice(currentPage * PROBLEMS_PER_PAGE, (currentPage + 1) * PROBLEMS_PER_PAGE);
+  function changeLibraryPage(page: number) {
+    setLibraryPage(Math.max(0, Math.min(page, pageCount - 1)));
+    libraryHeading.current?.focus({ preventScroll: true });
+    libraryHeading.current?.scrollIntoView({ block: 'start' });
+  }
+
   async function upload(file: File) {
     setBusy(true); setError('');
     try {
@@ -61,7 +93,7 @@ export default function Home() {
       const parsed = /\.zip$/i.test(file.name) ? readArchive(new Uint8Array(await file.arrayBuffer())) : { problems: [parseMarkdown(file.name, await file.text())], assets: [], skipped: 0 };
       if (!parsed.problems.length) throw new Error('No problem Markdown pages found in this file.');
       const result = await importProblems(parsed.problems, parsed.assets as [string, Uint8Array][]);
-      await refresh(); await refreshAssets(); setMessage(`Imported ${result.added} problems. Skipped ${result.skipped} existing problems and ${parsed.skipped} index pages.`);
+      await refresh(); await refreshAssets(); setLibraryPage(0); setMessage(`Imported ${result.added} problems. Skipped ${result.skipped} existing problems and ${parsed.skipped} index pages.`);
     } catch (e) { setError(e instanceof Error ? e.message : 'Import failed.'); }
     finally { setBusy(false); if (input.current) input.current.value = ''; }
   }
@@ -77,7 +109,7 @@ export default function Home() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not save this review. Return to the library before retrying.'); }
     finally { setBusy(false); ratingLock.current = false; }
   }
-  function start(ids: string[], nextMode: typeof mode = 'manual') { setQueue(ids); setMode(ids.length ? nextMode : null); setBack(false); setMessage(''); setError(''); }
+  function start(ids: string[], nextMode: typeof mode = 'manual') { setQueue(ids); setMode(ids.length ? nextMode : null); setBack(false); setQuestionFocus(false); setMessage(''); setError(''); }
   async function beginDaily() {
     setBusy(true); setError('');
     try { const state = await refresh(); modeDay.current = state.daily.day; start(pendingIds(state.daily), 'daily'); }
@@ -97,20 +129,28 @@ export default function Home() {
     const id = randomProblemId(problems);
     if (id) start([id], 'random');
   }
-  return <main><header><a className="brand" href="/">recall<span>.</span></a><span className="label">YOUR PERSONAL PRACTICE</span></header>
+  return <main><header><a className="brand" href="/">recall<span>.</span></a><nav className="header-nav" aria-label="Main navigation"><button className="text-button" disabled={busy} aria-pressed={!portal && !current} onClick={() => { start([]); setPortal(false); }}>Library</button><button className="text-button" disabled={!ready || busy} aria-pressed={portal && !current} onClick={() => { start([]); setPortal(true); }}>Questions ({withQuestions.length})</button></nav></header>
     <input ref={input} hidden type="file" accept=".zip,.md,.markdown" onChange={e => { const file = e.target.files?.[0]; if (file) void upload(file); }} />
     {error && <p role="alert" className="error">{error}</p>}{message && <p role="status" className="notice">{message}</p>}
     {!ready ? <p className="intro">{error ? 'Local storage is unavailable.' : 'Opening your library…'}</p> : current ? <section className="review-area">
-      <div className="section-heading"><button className="text-button" disabled={busy} onClick={() => start([])}>← Library</button><span className="count">{mode === 'daily' ? 'Daily session' : mode === 'random' ? 'Random practice' : 'Extra practice'} · {activeIds.length} remaining</span></div>
+      <div className="section-heading"><button className="text-button" disabled={busy} onClick={() => start([])}>{portal ? '← All questions' : '← Library'}</button><span className="count">{mode === 'daily' ? 'Daily session' : mode === 'random' ? 'Random practice' : 'Extra practice'} · {activeIds.length} remaining</span></div>
       <article className="review-card" key={current.id + String(back) + mode}><h1 className="problem-title">{current.title}</h1>
         {!back ? <><Reveal title="Question" content={current.description} path={current.sourcePath} assets={assets} /><button className="primary flip" onClick={() => setBack(true)}>Flip to answer →</button></> : <>
-          <p className="metadata">{current.category}</p>{current.url && <a href={current.url} target="_blank" rel="noreferrer">Open on LeetCode ↗</a>}
+          <p className="metadata">{current.category} <span className={`difficulty difficulty-${current.difficulty?.toLowerCase() || 'unknown'}`}>{current.difficulty || 'Unrated'}</span></p>{current.url && <a href={current.url} target="_blank" rel="noreferrer">Open problem ↗</a>}
           {current.sections.map(s => <Reveal key={s.id} title={s.title} content={s.content} path={current.sourcePath} assets={assets} />)}
-          <details className="original"><summary>Original imported Markdown</summary><pre>{current.original}</pre></details>
+          <details className="original"><summary>Original imported Markdown</summary><NoteMarkdown content={current.original} assets={assets} path={current.sourcePath} /></details>
+          <ProblemQuestions key={current.id} problemId={current.id} questions={questions.filter(q => q.problemId === current.id)} initiallyOpen={questionFocus} onSaved={question => setQuestions(previous => [...previous.filter(q => q.id !== question.id), question])} />
           <button className="text-button" onClick={() => setBack(false)}>← Back to question</button><p className="rating-label">How well did you recall it?</p>
           <div className="ratings">{(['Forgot', 'Rusty', 'Comfy'] as const).map(r => <button disabled={busy} key={r} onClick={() => void rate(r)}>{r}</button>)}</div>
         </>}
       </article>
+    </section> : portal ? <section className="questions-portal" aria-labelledby="questions-title">
+      <p className="eyebrow">YOUR FOLLOW-UP LIST</p><h1 id="questions-title">Questions to revisit.</h1>
+      <p className="subtitle">{questions.length} saved questions across {withQuestions.length} problems. Saved on this device.</p>
+      <input className="question-search" type="search" aria-label="Search saved questions" placeholder="Search problem titles or your questions…" value={questionQuery} onChange={e => setQuestionQuery(e.target.value)} />
+      {!withQuestions.length && <div className="empty-state"><h3>Keep track of what’s unclear.</h3><p>Open a problem, flip to its back, then open My questions to write your first question.</p><button className="secondary" onClick={() => setPortal(false)}>Browse library</button></div>}
+      {questionMatches.map(problem => <article key={problem.id} className="question-group"><div className="section-heading"><h2>{problem.title}</h2><button className="secondary" onClick={() => { start([problem.id]); setQuestionFocus(true); setBack(true); }}>Open problem</button></div><ul>{questions.filter(q => q.problemId === problem.id).map(q => <li key={q.id}>{q.text}</li>)}</ul></article>)}
+      {!!withQuestions.length && !questionMatches.length && <p className="muted">No saved questions match your search.</p>}
     </section> : <>
       <section className="intro"><p className="eyebrow">SOLVED ONCE. REMEMBER LONGER.</p><h1>A little recall.<br />A lot more confidence.</h1><p className="subtitle">Revisit the problems you’ve solved, with your own notes and the answers tucked away.</p>
         {daily && <section className="daily-panel" aria-labelledby="daily-title">
@@ -128,11 +168,14 @@ export default function Home() {
           <details className="daily-settings"><summary>Daily target</summary><form onSubmit={changeTarget}><label htmlFor="daily-target">Problems per day</label><div className="actions"><input id="daily-target" type="number" min="1" max="100" step="1" required value={targetDraft} onChange={e => setTargetDraft(e.target.value)} /><button className="secondary" disabled={busy} type="submit">Save target</button></div><p className="muted small">Unfinished cards carry forward at local midnight. Raising your target adds due cards; lowering it doesn’t remove today’s saved cards.</p></form></details>
         </section>}
       </section>
-      <section className="workspace" aria-labelledby="library-title"><div className="section-heading"><h2 id="library-title">Your library <span className="count">({problems.length})</span></h2><button className="primary" disabled={busy} onClick={() => input.current?.click()}>{busy ? 'Importing…' : 'Import notes +'}</button></div>
+      <section className="workspace" aria-labelledby="library-title"><div className="section-heading"><h2 id="library-title" ref={libraryHeading} tabIndex={-1}>Your library <span className="count">({problems.length})</span></h2><button className="primary" disabled={busy} onClick={() => input.current?.click()}>{busy ? 'Importing…' : 'Import notes +'}</button></div>
         {!problems.length ? <div className="empty-state"><div className="card-mark" aria-hidden="true">{'{ }'}</div><h3>Your next review starts here.</h3><p>Choose your Notion Markdown ZIP or an individual Markdown file. Missing fields are welcome.</p><span className="status">Your notes and reviews stay in this browser</span></div> : <>
-          <div className="filters"><input aria-label="Search problem titles" placeholder="Search problems…" value={query} onChange={e => setQuery(e.target.value)} /><select aria-label="Filter by category" value={category} onChange={e => setCategory(e.target.value)}><option value="">All categories</option>{Array.from(new Set(problems.map(p => p.category))).sort().map(c => <option key={c}>{c}</option>)}</select></div>
+          <div className="filters"><input aria-label="Search problem titles" placeholder="Search problems…" value={query} onChange={e => { setQuery(e.target.value); setLibraryPage(0); }} /><select aria-label="Filter by category" value={category} onChange={e => { setCategory(e.target.value); setLibraryPage(0); }}><option value="">All categories</option>{Array.from(new Set(problems.map(p => p.category))).sort().map(c => <option key={c}>{c}</option>)}</select></div>
           <p className="muted small">Opening any problem lets you review early. A rating updates its next review date. Reimport skips existing cards.</p>
-          <div className="problem-list">{filtered.map(p => <button className="problem-row" key={p.id} onClick={() => start([p.id])}><span><strong>{p.title}</strong><small>{p.category}</small></span><span className="count">{+new Date(p.schedule.due) <= now ? 'Due now' : new Date(p.schedule.due).toLocaleDateString()} →</span></button>)}</div>{!filtered.length && <p className="muted">No problems match your search.</p>}
+          {!!filtered.length && <LibraryPages page={currentPage} pageCount={pageCount} total={filtered.length} position="top" onPage={changeLibraryPage} />}
+          <div className="problem-list">{pageProblems.map(p => <button className="problem-row" key={p.id} onClick={() => start([p.id])}><span><strong>{p.title}</strong><small>{p.category}</small></span><span className="count">{+new Date(p.schedule.due) <= now ? 'Due now' : new Date(p.schedule.due).toLocaleDateString()} →</span></button>)}</div>
+          {!!filtered.length && <LibraryPages page={currentPage} pageCount={pageCount} total={filtered.length} position="bottom" onPage={changeLibraryPage} />}
+          {!filtered.length && <p className="muted">No problems match your search.</p>}
         </>}
       </section>
     </>}

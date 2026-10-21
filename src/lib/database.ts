@@ -1,8 +1,10 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import { createEmptyCard, fsrs, Rating, type Card, type ReviewLog } from 'ts-fsrs';
-import type { ImportedProblem } from './import';
+import { parseMarkdown, PARSER_VERSION, type ImportedProblem } from './import';
 import { buildDailySession, DEFAULT_DAILY_TARGET, validTarget, type DailySession } from './daily';
-export type Problem = ImportedProblem & { schedule: Card };
+import { withProblemReference } from './problem-references';
+export type Problem = ImportedProblem & { schedule: Card; parserVersion?: number };
+export type ProblemQuestion = { id: string; problemId: string; text: string; createdAt: Date; updatedAt: Date };
 export type RecallRating = 'Forgot' | 'Rusty' | 'Comfy';
 interface RecallDB extends DBSchema {
   problems: { key: string; value: Problem };
@@ -10,11 +12,12 @@ interface RecallDB extends DBSchema {
   assets: { key: string; value: Blob };
   settings: { key: string; value: { dailyTarget: number } };
   sessions: { key: string; value: DailySession };
+  questions: { key: string; value: ProblemQuestion; indexes: { 'by-problem': string } };
 }
 let connection: Promise<IDBPDatabase<RecallDB>> | undefined;
 function database() {
   if (!connection) {
-    const opening = openDB<RecallDB>('leetcode-recall', 2, {
+    const opening = openDB<RecallDB>('leetcode-recall', 3, {
       upgrade(db, oldVersion) {
         if (oldVersion < 1) {
           db.createObjectStore('problems', { keyPath: 'id' });
@@ -22,6 +25,7 @@ function database() {
           db.createObjectStore('assets');
         }
         if (oldVersion < 2) { db.createObjectStore('settings'); db.createObjectStore('sessions'); }
+        if (oldVersion < 3) db.createObjectStore('questions', { keyPath: 'id' }).createIndex('by-problem', 'problemId');
       },
       blocking() { void opening.then(db => db.close()); connection = undefined; },
       terminated() { connection = undefined; },
@@ -42,7 +46,7 @@ export async function importProblems(problems: ImportedProblem[], assets: [strin
   let added = 0, skipped = 0;
   for (const problem of problems) {
     if (await tx.objectStore('problems').get(problem.id)) { skipped++; continue; }
-    await tx.objectStore('problems').add({ ...problem, schedule: createEmptyCard() }); added++;
+    await tx.objectStore('problems').add({ ...withProblemReference(problem), schedule: createEmptyCard(), parserVersion: PARSER_VERSION }); added++;
   }
   for (const [path, bytes] of assets) await tx.objectStore('assets').put(new Blob([new Uint8Array(bytes)]), path);
   await tx.done;
@@ -52,7 +56,16 @@ export type ReviewState = { problems: Problem[]; daily: DailySession; target: nu
 export async function loadReviewState(now = new Date(), newTarget?: number): Promise<ReviewState> {
   if (newTarget !== undefined) validTarget(newTarget);
   const tx = (await database()).transaction(['problems', 'settings', 'sessions'], 'readwrite');
-  const problems = await tx.objectStore('problems').getAll();
+  const stored = await tx.objectStore('problems').getAll();
+  const problems: Problem[] = [];
+  for (const problem of stored) {
+    let updated = withProblemReference(problem);
+    if ((problem.parserVersion ?? 1) < PARSER_VERSION) {
+      updated = { ...updated, sections: parseMarkdown(problem.sourcePath, problem.original).sections, parserVersion: PARSER_VERSION };
+    }
+    if (updated !== problem) await tx.objectStore('problems').put(updated);
+    problems.push(updated);
+  }
   const settings = await tx.objectStore('settings').get('preferences');
   const target = newTarget ?? settings?.dailyTarget ?? DEFAULT_DAILY_TARGET;
   if (newTarget !== undefined) await tx.objectStore('settings').put({ dailyTarget: target }, 'preferences');
@@ -81,4 +94,43 @@ export async function saveRating(problemId: string, rating: RecallRating, dailyD
   await tx.objectStore('sessions').put(daily, 'daily');
   await tx.done;
   return result.card.due;
+}
+
+
+export async function loadQuestions(problemId?: string): Promise<ProblemQuestion[]> {
+  const db = await database();
+  const questions = problemId === undefined ? await db.getAll('questions') : await db.getAllFromIndex('questions', 'by-problem', problemId);
+  return questions.sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt) || a.id.localeCompare(b.id));
+}
+
+export async function saveQuestion(problemId: string, value: string, id?: string): Promise<ProblemQuestion> {
+  const text = value.trim();
+  if (!text || text.length > 10000) throw new Error('Write a question between 1 and 10,000 characters.');
+  const tx = (await database()).transaction(['problems', 'questions'], 'readwrite');
+  if (!await tx.objectStore('problems').get(problemId)) throw new Error('Problem not found.');
+  const previous = id ? await tx.objectStore('questions').get(id) : undefined;
+  if (id && (!previous || previous.problemId !== problemId)) throw new Error('This question could not be found for this problem.');
+  const now = new Date();
+  const question: ProblemQuestion = { id: id || crypto.randomUUID(), problemId, text, createdAt: previous?.createdAt || now, updatedAt: now };
+  await tx.objectStore('questions').put(question);
+  await tx.done;
+  return question;
+}
+
+export async function saveProblemDetails(problemId: string, description: string, value: string): Promise<Problem> {
+  if (description.length > 100000) throw new Error('Please keep the description under 100,000 characters.');
+  const url = value.trim();
+  if (url) {
+    try {
+      const parsed = new URL(url);
+      if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password || url.length > 2000) throw new Error();
+    } catch { throw new Error('Enter a valid http or https problem link, or leave it empty.'); }
+  }
+  const tx = (await database()).transaction('problems', 'readwrite');
+  const problem = await tx.store.get(problemId);
+  if (!problem) throw new Error('Problem not found.');
+  // Keep the stable identity and latest scheduling state, notes and parser version.
+  const updated = { ...problem, description: description.trim(), url };
+  await tx.store.put(updated); await tx.done;
+  return updated;
 }
