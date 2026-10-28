@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { handleReminder, reminderDay, type ReminderEmail } from '../src/lib/email-reminder';
+import { handleReminder, reminderSubject, reminderDay, type ReminderEmail } from '../src/lib/email-reminder';
 
 const env = {
   CRON_SECRET: 'disposable-test-secret-long-enough', REMINDER_ENABLED: 'true',
@@ -112,4 +112,13 @@ test('personalized reminders use the shared titles, escape HTML and fail closed 
   let read = false;
   await handleReminder(request('Bearer wrong'), enabled, send, now, async () => { read = true; return loader(); });
   assert.equal(read, false);
+});
+
+test('personalized subject lists titles and safely bounds long or multiline subjects', () => {
+  assert.equal(reminderSubject(['Two Sum', 'Valid Anagram', 'Word Search']), 'Today’s recall: Two Sum · Valid Anagram · Word Search');
+  assert.equal(reminderSubject(), 'Time for your LeetCode recall');
+  const subject = reminderSubject(['Problem\r\nBcc: text', 'x'.repeat(400)]);
+  assert.equal(/[\r\n]/.test(subject), false);
+  assert.equal(Array.from(subject).length, 200);
+  assert.ok(subject.endsWith('…'));
 });

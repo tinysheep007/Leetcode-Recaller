@@ -115,5 +115,5 @@ No backup feature is planned. Optional owner-only Supabase sync/shared selection
 - [x] Owner reports project/app user created, SQL migration succeeded, Production sync variables saved and public signup disabled. Live integration verification remains pending.
 - [x] Implement minimal metadata sync, offline local writes, newer-schedule merging, response race protection, status/retry UI and note hydration for remote-only placeholders.
 - [x] Implement shared daily selection in reminder timezone, merged completion and stale-regeneration protection.
-- [x] Implement title-only personalized email from frozen shared daily selection, HTML escaping and fail-closed cloud errors.
+- [x] Implement title-only personalized email from frozen shared daily selection, selected titles in subject and body, bounded single-line subjects, HTML escaping and fail-closed cloud errors.
 - [ ] Verify real auth/SQL permissions, two-device/offline sync, deployment and scheduled personalized delivery.

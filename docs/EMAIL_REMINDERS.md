@@ -2,7 +2,7 @@
 
 ## Optional personalized titles
 
-With `SYNC_ENABLED=true` and a configured Supabase project, emails list titles from the persisted shared daily selection. Follow [SUPABASE_SETUP.md](SUPABASE_SETUP.md) first. Cloud mode fails closed on database errors and skips an empty library. The first email snapshot for a day is retained for retries; later regeneration cannot edit an already-sent message. The local-only generic mode described below remains available with cloud sync disabled.
+With `SYNC_ENABLED=true` and a configured Supabase project, emails list titles from the persisted shared daily selection in both the subject and numbered body list. Personalized subjects use “Today’s recall: Title · Title · Title”; subjects longer than 200 characters are shortened, while full titles remain in the body. Follow [SUPABASE_SETUP.md](SUPABASE_SETUP.md) first. Cloud mode fails closed on database errors and skips an empty library. The first email snapshot for a day is retained for retries; later regeneration cannot edit an already-sent message. The local-only generic mode described below remains available with cloud sync disabled.
 
 ## What is implemented
 

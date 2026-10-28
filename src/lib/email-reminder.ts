@@ -12,6 +12,13 @@ const response = (body: Record<string, unknown>, status = 200) => Response.json(
 const digest = (value: string) => createHash('sha256').update(value).digest();
 const escape = (value: string) => value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
 
+export function reminderSubject(titles?: string[]) {
+  if (!titles?.length) return 'Time for your LeetCode recall';
+  const subject = `Today’s recall: ${titles.map(title => title.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim()).join(' · ')}`;
+  const characters = Array.from(subject);
+  return characters.length > 200 ? characters.slice(0, 199).join('') + '…' : subject;
+}
+
 export function reminderDay(now: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
   const value = (name: string) => parts.find(p => p.type === name)!.value;
@@ -60,7 +67,7 @@ export async function handleReminder(request: Request, env: Environment, send: E
   const titleHtml = titles ? `<p>Your daily problems:</p><ol>${titles.map(title => `<li>${escape(title)}</li>`).join('')}</ol>` : '';
   const link = appUrl.href;
   const email: ReminderEmail = {
-    from, to: [recipient], subject: 'Time for your LeetCode recall',
+    from, to: [recipient], subject: reminderSubject(titles),
     text: `A little recall, at your own pace.\n\n${titleText}Open your saved daily review: ${link}\n\nAlready finished? You are all set for today. This is a daily reminder; your notes stay on your device.\n\nTo stop these reminders, set REMINDER_ENABLED=false in your Vercel project and redeploy.`,
     html: `<div style="font-family:Arial,sans-serif;color:#25392f;max-width:520px;margin:32px auto;line-height:1.7"><h1>A little recall.</h1><p>Take a moment to revisit the problems you’ve solved.</p>${titleHtml}<p><a href="${escape(link)}" style="display:inline-block;padding:12px 20px;background:#25392f;color:white;border-radius:8px;text-decoration:none">Open daily review</a></p><p>Already finished? You’re all set for today.</p><p style="font-size:12px;color:#6f786e">This is a daily reminder. Your notes stay on your device.</p><p style="font-size:12px;color:#6f786e">To stop reminders, set REMINDER_ENABLED=false in your Vercel project and redeploy.</p></div>`,
   };
