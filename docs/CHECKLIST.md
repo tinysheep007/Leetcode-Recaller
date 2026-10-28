@@ -113,6 +113,7 @@ No backup feature is planned. Optional owner-only Supabase sync/shared selection
 - [x] Owner created a Supabase Free organization.
 - [x] Prepare owner-only authentication, no-direct-browser-access RLS migration, version-checked server storage and setup guide.
 - [x] Owner reports project/app user created, SQL migration succeeded, Production sync variables saved and public signup disabled. Live integration verification remains pending.
+- [x] Show Cloud sync controls only on the Library page; keep the component mounted for background sync during reviews and other tabs.
 - [x] Implement minimal metadata sync, offline local writes, newer-schedule merging, response race protection, status/retry UI and note hydration for remote-only placeholders.
 - [x] Implement shared daily selection in reminder timezone, merged completion and stale-regeneration protection.
 - [x] Implement title-only personalized email from frozen shared daily selection, selected titles in subject and body, bounded single-line subjects, HTML escaping and fail-closed cloud errors.

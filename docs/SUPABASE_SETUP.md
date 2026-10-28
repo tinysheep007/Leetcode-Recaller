@@ -49,7 +49,7 @@ After the updated code is committed/pushed, redeploy Production to activate the 
 
 1. Open the updated app online on your existing browser/origin. Do not clear site data.
 2. Set Daily target to **3** if you want three titles in the email. Existing larger selections can be replaced using Generate another set; completed reviews are always preserved.
-3. Open **Cloud sync** below the header and sign in with the app user's email/password.
+3. On the Library page, open **Cloud sync** below the header and sign in with the app user's email/password.
 4. Wait for **Synced at …**. Initial upload seeds your metadata and, when possible, the current local daily selection.
 5. Tap Sync now to retry an error. Check that your daily selection and notes still look correct.
 
@@ -82,3 +82,5 @@ Test a scheduled or dashboard-triggered run during the configured 8–9 a.m. Bos
 ## Verification status
 
 Local tests cover metadata allowlists, owner rejection, cookie/origin/body protections, stale snapshots, concurrent writes, in-flight local edits, metadata hydration, regeneration conflicts, frozen email titles, HTML escaping and provider failure behavior. SQL deployment, real auth, two-device use, offline reconnection and scheduled inbox delivery still need verification on your accounts/devices. Never clear local storage as a troubleshooting step.
+
+Cloud sync controls are shown only on the Library page. The sync component stays mounted while reviewing or using other tabs, so automatic sync and pending status continue independently of panel visibility.

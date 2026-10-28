@@ -155,7 +155,7 @@ export default function Home() {
     finally { setBusy(false); }
   }
   return <main><header><a className="brand" href="/">recall<span>.</span></a><nav className="header-nav" aria-label="Main navigation"><button className="text-button" disabled={busy} aria-pressed={!portal && !stats && !current} onClick={() => { start([]); setPortal(false); setStats(false); }}>Library</button><button className="text-button" disabled={!ready || busy} aria-pressed={portal && !stats && !current} onClick={() => { start([]); setPortal(true); setStats(false); }}>Questions</button><button className="text-button" disabled={!ready || busy} aria-pressed={stats && !current} onClick={() => { start([]); setPortal(false); setStats(true); }}>Stats</button></nav></header>
-    {ready && <CloudSync onSynced={refresh} />}
+    {ready && <CloudSync onSynced={refresh} visible={!current && !portal && !stats} />}
     <input ref={input} hidden type="file" accept=".zip,.md,.markdown" onChange={e => { const file = e.target.files?.[0]; if (file) void upload(file); }} />
     {error && <p role="alert" className="error">{error}</p>}{message && <p role="status" className="notice">{message}</p>}
     {!ready ? <p className="intro">{error ? 'Local storage is unavailable.' : 'Opening your library…'}</p> : current ? <section className="review-area">

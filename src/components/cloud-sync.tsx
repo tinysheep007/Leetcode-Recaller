@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { applyCloudSync, loadCloudFlags, prepareCloudSync } from '@/lib/database';
 import { hydrateSharedState } from '@/lib/remote-state';
 
-export default function CloudSync({ onSynced }: { onSynced: () => Promise<unknown> }) {
+export default function CloudSync({ onSynced, visible = true }: { onSynced: () => Promise<unknown>; visible?: boolean }) {
   const [offline, setOffline] = useState(false);
   const [enabled, setEnabled] = useState(false), [signedIn, setSignedIn] = useState(false);
   const [email, setEmail] = useState(''), [password, setPassword] = useState('');
@@ -94,7 +94,7 @@ export default function CloudSync({ onSynced }: { onSynced: () => Promise<unknow
     } catch (error) { setStatus(error instanceof Error ? error.message : 'Could not sign out.'); }
     finally { lock.current = false; setWorking(false); }
   }
-  if (!enabled) return null;
+  if (!enabled || !visible) return null;
   return <details className="cloud-panel"><summary>Cloud sync · {offline ? 'offline' : signedIn ? 'connected' : 'sign in'}</summary>
     <p className="muted small">Sync titles, review schedules and your daily selection for reminder emails. Notes, images and personal questions stay on this device. An already-delivered email keeps the set it was sent with.</p>
     {signedIn ? <div className="actions"><button className="secondary" disabled={working} onClick={() => void sync()}>Sync now</button><button className="text-button" disabled={working} onClick={() => void logout()}>Sign out</button></div> : <form onSubmit={login}>
