@@ -56,7 +56,9 @@ Keep this file updated as work is completed. Checked means implemented; verifica
 - [x] Automated tests for repeat import persistence and FSRS interval ordering.
 - [x] Configurable daily target (default 5), saved daily selections, oldest-due ordering and completed/remaining progress.
 - [x] Carry unfinished cards across local days, preserving pending obligations.
-- [x] Optional extra due practice and Random problem from the entire library.
+- [x] Optional extra due practice and Random problem from the entire library. Random now uses a persisted shuffled cycle, avoiding repeats until exhausted and immediate cycle-boundary repeats where possible.
+- [x] Generate another set replaces pending daily suggestions using alternative due/new problems while preserving completed work and all schedules/ratings.
+- [ ] Verify selection fixes and saved queue behavior on the actual deployed phone.
 - [x] Version 1 storage migration preserves existing cards, assets and review history; daily ratings save atomically.
 - [x] Document session rules and tradeoffs in DAILY_REVIEWS.md.
 - [x] Browser verification with disposable cards: resume after reload, lower/increase target, random selection without rating, full daily completion, extra due practice, and offline rating persistence.
@@ -90,7 +92,7 @@ Keep this file updated as work is completed. Checked means implemented; verifica
 - [x] Owner-requested Boston 8 a.m. reminder hour with automatic daylight/standard-time slot selection (approximately 8–9 a.m. on Hobby).
 - [x] Keep reminder settings in Vercel environment variables for personal use; no settings UI planned.
 
-No backup feature or cloud sync is planned. Localhost, deployed sites, browsers and devices have separate local data. Offline caches and IndexedDB survive ordinary restarts but can be removed by clearing site data or browser storage eviction.
+No backup feature is planned. Optional owner-only Supabase sync/shared selection/personalized email code is implemented, but requires project setup/deployment and live checks; local storage remains active. Localhost, deployed sites, browsers and devices have separate local data. Offline caches and IndexedDB survive ordinary restarts but can be removed by clearing site data or browser storage eviction.
 
 
 ## Personal problem questions
@@ -105,3 +107,13 @@ No backup feature or cloud sync is planned. Localhost, deployed sites, browsers 
 - [ ] Browser and actual iPhone verification of question saving, editing and offline portal reopening (no browser surface available during implementation).
 - [x] Commit and push personal questions, pagination, parsing, reference catalog and difficulty (964056b).
 - [ ] Deploy/verify those features and the newer Stats changes on the production URL.
+
+## Personalized emails / remote selection (approved October 27, 2026)
+
+- [x] Owner created a Supabase Free organization.
+- [x] Prepare owner-only authentication, no-direct-browser-access RLS migration, version-checked server storage and setup guide.
+- [x] Owner reports project/app user created, SQL migration succeeded, Production sync variables saved and public signup disabled. Live integration verification remains pending.
+- [x] Implement minimal metadata sync, offline local writes, newer-schedule merging, response race protection, status/retry UI and note hydration for remote-only placeholders.
+- [x] Implement shared daily selection in reminder timezone, merged completion and stale-regeneration protection.
+- [x] Implement title-only personalized email from frozen shared daily selection, HTML escaping and fail-closed cloud errors.
+- [ ] Verify real auth/SQL permissions, two-device/offline sync, deployment and scheduled personalized delivery.

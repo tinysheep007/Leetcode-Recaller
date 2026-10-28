@@ -1,6 +1,6 @@
 # LeetCode Recall
 
-A personal, offline-capable coding-problem review app built with Next.js, React and TypeScript. Notes, images, personal questions and progress stay in your browser's IndexedDB. No app login or remote database is required.
+A personal, offline-capable coding-problem review app built with Next.js, React and TypeScript. Notes, images, personal questions and progress stay in your browser's IndexedDB. No app login or remote database is required for local-only use. Optional owner-only Supabase sync enables personalized daily-title emails.
 
 ## Get started
 
@@ -15,7 +15,7 @@ npm ci
 npm run dev
 ```
 
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000), then choose **Import notes +**. No environment variables are required unless you want email reminders.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000), then choose **Import notes +**. No environment variables are required for local-only use; reminders and optional cloud sync have separate setup.
 
 **Bring your own notes:** `questions.zip` is private and excluded from Git. A fresh clone contains no default problem ZIP. Import a single Markdown file or a ZIP containing one Markdown file per problem. See the [format and copyable examples](docs/GETTING_STARTED.md#3-prepare-and-import-your-problems).
 
@@ -31,7 +31,7 @@ Open [http://127.0.0.1:3000](http://127.0.0.1:3000), then choose **Import notes 
 
 Known titles receive bundled short summaries, links and difficulty metadata. This is not a full statement or solution library. Missing content stays empty, with a placeholder after reveal; the running app does not fetch statements.
 
-Each browser, device and site address has separate data. Normal updates preserve IndexedDB; clearing site data or browser storage eviction can remove it. There is no cloud sync or backup. Emails contain a generic app link, not your local daily problem selection.
+Each browser, device and site address has separate data. Normal updates preserve IndexedDB; clearing site data or browser storage eviction can remove it. There is no cloud sync or backup. Emails are generic in local-only mode. Optional Supabase sync lets them list the shared daily titles; notes and images still stay local.
 
 ## Development checks
 
@@ -49,6 +49,7 @@ Tests use fake email delivery. Device behavior and real email delivery require s
 - [Checklist and verification status](docs/CHECKLIST.md)
 - [Markdown parsing rules](docs/PARSING_RULES.md)
 - [Reference catalog coverage](docs/PROBLEM_REFERENCES.md)
+- [Supabase setup for personalized emails](docs/SUPABASE_SETUP.md)
 - [Daily sessions and random practice](docs/DAILY_REVIEWS.md)
 - [Personal questions and storage](docs/PROBLEM_QUESTIONS.md)
 - [Stats and visit counting](docs/STATISTICS.md)

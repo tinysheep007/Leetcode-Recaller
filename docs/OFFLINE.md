@@ -46,3 +46,9 @@ Stats category charts use bundled HTML/CSS and local data only; there is no char
 ## Interface motion
 
 Short tab/card/reveal entrances, chart entrances and button press feedback use bundled CSS only, with no animation assets, libraries, network calls or looping effects. They operate offline and are enabled only under `prefers-reduced-motion: no-preference`; the phone's Reduce Motion preference disables them. App updates still download the updated CSS as part of normal caching. Production build is checked; actual iPhone motion/performance verification remains pending.
+
+Random practice now persists a shuffled cycle in IndexedDB and Generate another set replaces unfinished daily suggestions locally. Both work offline and do not change ratings or schedules by themselves. Optional Supabase sync/personalized emails now have a separate activation guide; they remain disabled until configured.
+
+## Optional cloud sync
+
+Cloud sync is off by default. It keeps using IndexedDB and adds no schema reset. Server requests use no-store, and /api/account and /api/sync stay outside service-worker caches. A configured device syncs only minimal titles/categories/schedules and daily state; original notes, questions, assets, visits and rating logs stay local. Local changes made during an in-flight sync are preserved and retried. Offline changes upload after reconnecting; failures leave local data intact and expose retry status. The shared calendar follows the configured reminder timezone after the first sync. See SUPABASE_SETUP.md for conflict rules, metadata-only note hydration and limits. Live iPhone/reconnect testing is pending.

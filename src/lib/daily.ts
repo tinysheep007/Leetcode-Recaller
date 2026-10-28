@@ -17,9 +17,9 @@ export function dueProblems<T extends SchedulableProblem>(problems: T[], now: Da
   return problems.filter(p => p.schedule.reps !== 0 && +new Date(p.schedule.due) <= +now)
     .sort((a, b) => +new Date(a.schedule.due) - +new Date(b.schedule.due) || a.id.localeCompare(b.id));
 }
-export function buildDailySession(problems: SchedulableProblem[], previous: DailySession | undefined, target: number, now: Date): DailySession {
+export function buildDailySession(problems: SchedulableProblem[], previous: DailySession | undefined, target: number, now: Date, day = localDay(now)): DailySession {
   validTarget(target);
-  const day = localDay(now), available = new Set(problems.map(p => p.id));
+  const available = new Set(problems.map(p => p.id));
   const sameDay = previous?.day === day;
   const selectedIds = Array.from(new Set((sameDay ? previous.selectedIds : previous ? pendingIds(previous) : []).filter(id => available.has(id))));
   const completedIds = sameDay ? previous.completedIds.filter(id => selectedIds.includes(id)) : [];
@@ -33,4 +33,43 @@ export function buildDailySession(problems: SchedulableProblem[], previous: Dail
 }
 export function randomProblemId(problems: { id: string }[], random = Math.random): string | undefined {
   return problems.length ? problems[Math.floor(random() * problems.length)].id : undefined;
+}
+
+export function shuffled<T>(values: T[], random = Math.random): T[] {
+  const result = [...values];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+export type RandomCycle = { knownIds: string[]; remainingIds: string[]; lastId?: string };
+export function nextRandomProblem(ids: string[], previous?: RandomCycle, random = Math.random) {
+  const available = [...new Set(ids)], allowed = new Set(available);
+  const known = new Set(previous?.knownIds ?? []);
+  let remainingIds = [...new Set(previous?.remainingIds ?? [])].filter(id => allowed.has(id));
+  const added = available.filter(id => !known.has(id));
+  if (added.length) remainingIds = shuffled([...remainingIds, ...added], random);
+  if (!remainingIds.length) {
+    remainingIds = shuffled(available, random);
+    // Avoid repeating the last draw across cycle boundaries when alternatives exist.
+    if (remainingIds.length > 1 && remainingIds[0] === previous?.lastId) remainingIds.push(remainingIds.shift()!);
+  }
+  const id = remainingIds.shift();
+  return { id, cycle: { knownIds: available, remainingIds, lastId: id ?? previous?.lastId } satisfies RandomCycle };
+}
+
+/** Replace pending suggestions only; ratings and schedules remain untouched. */
+export function regenerateDailySession(problems: SchedulableProblem[], current: DailySession, target: number, now: Date, random = Math.random): DailySession {
+  validTarget(target);
+  const completedIds = [...current.completedIds];
+  const excluded = new Set(current.selectedIds);
+  const candidates = problems.filter(p => !excluded.has(p.id));
+  const scheduled = dueProblems(candidates, now);
+  const fresh = shuffled(candidates.filter(p => p.schedule.reps === 0), random);
+  const slots = Math.max(0, target - completedIds.length);
+  const replacements = [...scheduled, ...fresh].slice(0, slots).map(p => p.id);
+  // If there are too few alternatives, retain pending cards instead of losing work.
+  const retained = pendingIds(current).slice(0, Math.max(0, slots - replacements.length));
+  return { day: current.day, selectedIds: [...completedIds, ...replacements, ...retained], completedIds };
 }

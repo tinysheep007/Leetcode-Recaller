@@ -22,8 +22,8 @@
 ## Extra and random practice
 
 - After the daily set is complete, **Extra due practice** opens up to the daily target of currently due cards. These extra queues are temporary, but saved ratings persist.
-- **Random problem** chooses uniformly from the entire library, including cards scheduled for later; library search/category filters do not restrict it. The same problem may be selected again by chance.
-- Selecting or revealing a random problem does not reschedule it or write a review. Explicitly rating it does. Random practice is available even before the daily set is finished.
+- **Random problem** draws from a shuffled queue covering the entire library, including cards scheduled for later; library search/category filters do not restrict it. Each problem appears once per cycle. The queue is persisted locally across reloads. A new cycle avoids immediately repeating the previous draw when there is more than one problem. Newly imported IDs join the remaining queue; missing IDs are dropped.
+- Selecting a random problem advances the saved random queue, but does not reschedule it or write a review. Revealing content also does not rate it. Explicitly rating it does. Random practice is available even before the daily set is finished.
 - When nothing is due, the app shows a caught-up state; Random and manual early review remain available.
 
 ## Storage and migration
@@ -37,3 +37,13 @@ Tests in `tests/daily.test.ts` cover bounded stable selection, carryover, change
 ## Browser verification
 
 Verified in a production build at a separate test origin using seven disposable cards. Default selection was five; rating one and reloading resumed at card two with four left. Lowering the target to two kept the existing set; increasing to six added one card. Random practice without a rating left completion unchanged. With the server stopped, reload, rating, progress persistence, finishing the daily set, and opening Extra due practice all worked. Real library review logs were not used for these checks. Actual iPhone verification and deployment of these changes remain pending.
+
+## Generate another set
+
+Generate another set replaces only unfinished suggestions, preserves today's completed IDs/count and leaves all schedules/review logs/questions untouched. It prefers other due reviewed problems, then shuffled unreviewed problems, excluding the currently selected set. Explicit regeneration follows the current target for remaining slots (completed cards are always retained). If alternatives are insufficient, some previous unfinished suggestions remain; a message reports how many were replaced. Future-scheduled reviewed cards are not pulled in. Skipped suggestions stay eligible for a later daily set; regeneration is not a rating or permanent dismissal. Repeated regeneration can revisit an earlier set. Ordinary daily loading still carries unfinished cards forward unless you explicitly regenerate. A smaller library or soon-due Forgot/Rusty cards can still produce repetition on different days.
+
+Random queue state lives under the separate `random` key in the existing settings store. No schema reset, schedule reset or new database version is required. Concurrent draws and regeneration use read/write transactions. Tests in selection.test.ts cover complete cycles, boundary repeats, library changes, concurrent draws and preservation of completed work/ratings.
+
+## Optional shared selection
+
+When cloud sync is configured and signed in, the server keeps the authoritative daily set for both the app and email. Local regeneration is provisional until sync succeeds. A stale generation request refreshes the shared set instead of overwriting newer changes. Daily completion is merged and schedules use the latest review timestamp. Local-only mode and saved Random cycles remain available independently. See SUPABASE_SETUP.md for scope and live checks.

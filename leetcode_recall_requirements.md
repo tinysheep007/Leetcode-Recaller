@@ -4,6 +4,7 @@
 
 These decisions supersede conflicting native iOS implementation and deployment suggestions below. The confirmed flashcard and recall behavior remains the planning baseline.
 
+- Optional owner-only Supabase sync is now approved for minimal problem metadata/schedules/daily selection and personalized emails. Keep full notes/images/personal questions/history local, preserve offline use, enforce owner authentication and keep cloud settings disabled until configured. See `docs/SUPABASE_SETUP.md`.
 - Build an installable, offline-capable web app (PWA) using Next.js and TypeScript.
 - Host on Vercel's free Hobby plan for personal use; no Xcode or Apple Developer membership is required.
 - Store notes, FSRS scheduling state, and review history locally in IndexedDB. Cache the app with a service worker for offline use after initial loading.

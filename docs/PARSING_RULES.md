@@ -64,7 +64,7 @@ Identity uses this priority:
 2. Trailing Notion page ID in the file path.
 3. Normalized title: lowercase, leading problem number removed, then non-ASCII-alphanumeric characters removed.
 
-An existing identity is skipped rather than merged or replaced. Existing notes, ratings and scheduling state are preserved. Assets at the same path may be replaced on reimport. A renamed file, changed identity source, shared first URL, or ambiguous normalized title can create a duplicate or cause a skip; there is no conflict-resolution UI yet.
+An existing identity is skipped rather than merged or replaced, except a cloud metadata-only placeholder can receive its original imported notes. That hydration keeps its existing schedule and ID. Existing notes, ratings and scheduling state are preserved. Assets at the same path may be replaced on reimport. A renamed file, changed identity source, shared first URL, or ambiguous normalized title can create a duplicate or cause a skip; there is no conflict-resolution UI yet.
 
 ## Example: Number of Islands
 

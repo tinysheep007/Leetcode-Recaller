@@ -121,7 +121,7 @@ Existing identities are **skipped**, preserving notes/progress instead of replac
 1. Browse Library with search and category/difficulty filters; lists are paginated.
 2. Open a problem, optionally reveal Question, then flip to its back. Reveal notes and code individually.
 3. Rate Forgot, Rusty or Comfy. Only rating changes the schedule. Unreviewed rows show only an arrow, without a deadline.
-4. Set your daily target (default 5). Saved sets prioritize scheduled reviews, then offer new problems. Unfinished selections carry forward. Random selects from the entire library regardless of browsing filters.
+4. Set your daily target (default 5). Saved sets prioritize scheduled reviews, then offer new problems. Unfinished selections carry forward. Generate another set swaps unfinished suggestions while keeping completed work. Random cycles through a saved shuffled library before repeating, regardless of browsing filters.
 5. Save personal questions under My questions on a card's back; use Questions to search them.
 6. Stats shows visits, dated ratings and category comparisons. Category percentages use each problem's latest rating, excluding unrated problems. Visits start with this tracking feature, not historical imports.
 
@@ -243,3 +243,7 @@ Tests use fake email delivery and temporary IndexedDB; they do not send real mai
 | Offline app unavailable | Correct origin, production build and Ready for offline use before disconnecting |
 
 [CHECKLIST.md](CHECKLIST.md) separates implementation from real-device/deployment checks. Local tests do not verify your Vercel account, mailbox or iPhone.
+
+## Optional personalized daily-title emails
+
+Owner-only Supabase sync is implemented but requires project configuration and deployment. See [SUPABASE_SETUP.md](SUPABASE_SETUP.md) for the SQL migration, app user, environment variables and verification steps. Local/offline use continues to work without it. With sync disabled, email remains generic.

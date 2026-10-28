@@ -1,11 +1,12 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
-import { importProblems, loadAssets, loadReviewState, loadQuestions, loadStatistics, recordVisit, saveRating, type Problem, type RecallRating, type ProblemQuestion, type SavedReview, type ProblemVisits } from '@/lib/database';
+import { importProblems, loadAssets, loadReviewState, loadQuestions, loadStatistics, recordVisit, drawRandomProblem, generateAnotherDailySet, saveRating, type Problem, type RecallRating, type ProblemQuestion, type SavedReview, type ProblemVisits } from '@/lib/database';
+import CloudSync from '@/components/cloud-sync';
 import Statistics from '@/components/statistics';
 import ProblemQuestions from '@/components/problem-questions';
 import { parseMarkdown, readArchive } from '@/lib/import';
-import { dueProblems, pendingIds, randomProblemId, type DailySession } from '@/lib/daily';
+import { dueProblems, pendingIds, type DailySession } from '@/lib/daily';
 function NoteMarkdown({ content, assets, path }: { content: string; assets: Record<string, string>; path: string }) {
   return <div className="markdown">{content.trim() ? <Markdown components={{ img: ({ src, alt }) => {
     const source = typeof src === 'string' ? src : ''; let resolved = '';
@@ -137,11 +138,24 @@ export default function Home() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not save the daily target.'); }
     finally { setBusy(false); }
   }
-  function randomPractice() {
-    const id = randomProblemId(problems);
-    if (id) start([id], 'random');
+  async function randomPractice() {
+    if (busy) return;
+    setBusy(true); setError('');
+    try { const id = await drawRandomProblem(); if (id) start([id], 'random'); }
+    catch { setError('Could not select a random problem. Please try again.'); }
+    finally { setBusy(false); }
+  }
+  async function regenerateDaily() {
+    setBusy(true); setError('');
+    try {
+      const { changed } = await generateAnotherDailySet();
+      await refresh();
+      setMessage(changed ? `Replaced ${changed} unfinished suggestions. Completed reviews are preserved.` : 'No different due or unreviewed problems are available. Your set is unchanged.');
+    } catch { setError('Could not generate another set. Your saved reviews are safe.'); }
+    finally { setBusy(false); }
   }
   return <main><header><a className="brand" href="/">recall<span>.</span></a><nav className="header-nav" aria-label="Main navigation"><button className="text-button" disabled={busy} aria-pressed={!portal && !stats && !current} onClick={() => { start([]); setPortal(false); setStats(false); }}>Library</button><button className="text-button" disabled={!ready || busy} aria-pressed={portal && !stats && !current} onClick={() => { start([]); setPortal(true); setStats(false); }}>Questions</button><button className="text-button" disabled={!ready || busy} aria-pressed={stats && !current} onClick={() => { start([]); setPortal(false); setStats(true); }}>Stats</button></nav></header>
+    {ready && <CloudSync onSynced={refresh} />}
     <input ref={input} hidden type="file" accept=".zip,.md,.markdown" onChange={e => { const file = e.target.files?.[0]; if (file) void upload(file); }} />
     {error && <p role="alert" className="error">{error}</p>}{message && <p role="status" className="notice">{message}</p>}
     {!ready ? <p className="intro">{error ? 'Local storage is unavailable.' : 'Opening your library…'}</p> : current ? <section className="review-area">
@@ -173,10 +187,11 @@ export default function Home() {
           {daily.selectedIds.length > target && <p className="muted small">Your saved set is larger than your target. Existing selections stay available until completed.</p>}
           <div className="actions">
             <button className="primary" disabled={!dailyRemaining.length || busy} onClick={() => void beginDaily()}>{daily.completedIds.length ? 'Continue daily review' : 'Start daily review'} · {dailyRemaining.length}</button>
-            <button className="secondary" disabled={!problems.length || busy} onClick={randomPractice}>Random problem ↝</button>
+            <button className="secondary" disabled={!problems.length || busy} onClick={() => void randomPractice()}>Random problem ↝</button>
+            {!!dailyRemaining.length && <button className="text-button" disabled={busy} onClick={() => void regenerateDaily()}>Generate another set ↻</button>}
             {!dailyRemaining.length && !!due.length && <button className="text-button" disabled={busy} onClick={() => start(due.slice(0, target).map(p => p.id), 'extra')}>Extra due practice · {Math.min(due.length, target)}</button>}
           </div>
-          <p className="muted small">{due.length} scheduled reviews ready · {problems.filter(p => p.schedule.reps === 0).length} new problems. New problems have no review date until you rate them. Random practice picks from your entire library; only rating it changes its schedule.</p>
+          <p className="muted small">{due.length} scheduled reviews ready · {problems.filter(p => p.schedule.reps === 0).length} new problems. New problems have no review date until you rate them. Random practice cycles through a shuffled library before repeating, even after reopening the app. Only rating changes a schedule. Generating another set swaps unfinished suggestions; those skipped remain available for review.</p>
           <details className="daily-settings"><summary>Daily target</summary><form onSubmit={changeTarget}><label htmlFor="daily-target">Problems per day</label><div className="actions"><input id="daily-target" type="number" min="1" max="100" step="1" required value={targetDraft} onChange={e => setTargetDraft(e.target.value)} /><button className="secondary" disabled={busy} type="submit">Save target</button></div><p className="muted small">Unfinished cards carry forward at local midnight. Raising your target adds scheduled or new cards; lowering it doesn’t remove today’s saved cards.</p></form></details>
         </section>}
       </section>

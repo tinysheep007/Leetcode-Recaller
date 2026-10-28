@@ -3,6 +3,8 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 // Server code only. Never import this module into a Client Component.
 export type ReminderEmail = { from: string; to: string[]; subject: string; text: string; html: string };
 export type EmailSender = (email: ReminderEmail, idempotencyKey: string) => Promise<boolean>;
+export type DailyEmailSelection = { day: string; titles: string[] };
+export type SelectionLoader = (now: Date) => Promise<DailyEmailSelection>;
 type Environment = Record<string, string | undefined>;
 const response = (body: Record<string, unknown>, status = 200) => Response.json(body, {
   status, headers: { 'Cache-Control': 'no-store, max-age=0' },
@@ -16,7 +18,7 @@ export function reminderDay(now: Date, timeZone: string) {
   return `${value('year')}-${value('month')}-${value('day')}`;
 }
 
-export async function handleReminder(request: Request, env: Environment, send: EmailSender, now = new Date()) {
+export async function handleReminder(request: Request, env: Environment, send: EmailSender, now = new Date(), loadSelection?: SelectionLoader) {
   if (request.method !== 'GET') return response({ error: 'Method not allowed' }, 405);
   const secret = env.CRON_SECRET;
   if (!secret || secret.length < 16) return response({ error: 'Reminder authentication is not configured' }, 503);
@@ -44,11 +46,23 @@ export async function handleReminder(request: Request, env: Environment, send: E
   }).format(now);
   if (hour !== '08') return response({ skipped: 'Outside the local 8 a.m. reminder hour', day });
 
+  let titles: string[] | undefined;
+  if (env.SYNC_ENABLED === 'true') {
+    try {
+      if (!loadSelection) throw new Error();
+      const selection = await loadSelection(now);
+      if (selection.day !== day) throw new Error();
+      titles = selection.titles;
+      if (!titles.length) return response({ skipped: 'No synced daily problems are available', day });
+    } catch { return response({ error: 'Could not load the shared daily set. No reminder was sent.' }, 503); }
+  }
+  const titleText = titles ? `Your daily problems:\n${titles.map((title, i) => `${i + 1}. ${title}`).join('\n')}\n\n` : '';
+  const titleHtml = titles ? `<p>Your daily problems:</p><ol>${titles.map(title => `<li>${escape(title)}</li>`).join('')}</ol>` : '';
   const link = appUrl.href;
   const email: ReminderEmail = {
     from, to: [recipient], subject: 'Time for your LeetCode recall',
-    text: `A little recall, at your own pace.\n\nOpen your saved daily review: ${link}\n\nAlready finished? You are all set for today. This is a daily reminder; your notes and progress stay on your device.\n\nTo stop these reminders, set REMINDER_ENABLED=false in your Vercel project and redeploy.`,
-    html: `<div style="font-family:Arial,sans-serif;color:#25392f;max-width:520px;margin:32px auto;line-height:1.7"><h1>A little recall.</h1><p>Take a moment to revisit the problems you’ve solved.</p><p><a href="${escape(link)}" style="display:inline-block;padding:12px 20px;background:#25392f;color:white;border-radius:8px;text-decoration:none">Open daily review</a></p><p>Already finished? You’re all set for today.</p><p style="font-size:12px;color:#6f786e">This is a daily reminder. Your notes and review progress stay on your device.</p><p style="font-size:12px;color:#6f786e">To stop reminders, set REMINDER_ENABLED=false in your Vercel project and redeploy.</p></div>`,
+    text: `A little recall, at your own pace.\n\n${titleText}Open your saved daily review: ${link}\n\nAlready finished? You are all set for today. This is a daily reminder; your notes stay on your device.\n\nTo stop these reminders, set REMINDER_ENABLED=false in your Vercel project and redeploy.`,
+    html: `<div style="font-family:Arial,sans-serif;color:#25392f;max-width:520px;margin:32px auto;line-height:1.7"><h1>A little recall.</h1><p>Take a moment to revisit the problems you’ve solved.</p>${titleHtml}<p><a href="${escape(link)}" style="display:inline-block;padding:12px 20px;background:#25392f;color:white;border-radius:8px;text-decoration:none">Open daily review</a></p><p>Already finished? You’re all set for today.</p><p style="font-size:12px;color:#6f786e">This is a daily reminder. Your notes stay on your device.</p><p style="font-size:12px;color:#6f786e">To stop reminders, set REMINDER_ENABLED=false in your Vercel project and redeploy.</p></div>`,
   };
   // Resend retains idempotency keys for 24 hours. Use a stable day key and body for retries.
   const recipientHash = createHash('sha256').update(recipient.toLowerCase()).digest('hex').slice(0, 24);

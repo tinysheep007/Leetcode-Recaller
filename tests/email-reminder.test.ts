@@ -92,3 +92,24 @@ test('only the Boston 8 a.m. slot sends in summer and winter, including DST tran
     assert.equal(Boolean(body.accepted), expected, instant);
   }
 });
+
+test('personalized reminders use the shared titles, escape HTML and fail closed if cloud loading fails', async () => {
+  let sent: ReminderEmail | undefined;
+  const send = async (email: ReminderEmail) => { sent = email; return true; };
+  const enabled = { ...env, SYNC_ENABLED: 'true' };
+  const loader = async () => ({ day: '2026-10-20', titles: ['Two Sum', '<img src=x onerror=alert(1)>', 'Word Search'] });
+  const response = await handleReminder(request(), enabled, send, now, loader);
+  assert.equal(response.status, 200);
+  assert.ok(sent!.text.includes('1. Two Sum'));
+  assert.ok(sent!.html.includes('&lt;img'));
+  assert.equal(sent!.html.includes('<img'), false);
+  sent = undefined;
+  const unavailable = await handleReminder(request(), enabled, send, now, async () => { throw new Error('private db error'); });
+  assert.equal(unavailable.status, 503); assert.equal(sent, undefined);
+  assert.equal((await unavailable.text()).includes('private'), false);
+  const empty = await handleReminder(request(), enabled, send, now, async () => ({ day: '2026-10-20', titles: [] }));
+  assert.equal(empty.status, 200); assert.equal(sent, undefined);
+  let read = false;
+  await handleReminder(request('Bearer wrong'), enabled, send, now, async () => { read = true; return loader(); });
+  assert.equal(read, false);
+});

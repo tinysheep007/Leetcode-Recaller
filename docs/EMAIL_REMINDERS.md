@@ -1,5 +1,9 @@
 # Daily email reminders
 
+## Optional personalized titles
+
+With `SYNC_ENABLED=true` and a configured Supabase project, emails list titles from the persisted shared daily selection. Follow [SUPABASE_SETUP.md](SUPABASE_SETUP.md) first. Cloud mode fails closed on database errors and skips an empty library. The first email snapshot for a day is retained for retries; later regeneration cannot edit an already-sent message. The local-only generic mode described below remains available with cloud sync disabled.
+
 ## What is implemented
 
 The official `resend` npm package sends one generic personal reminder through Resend. Vercel Cron calls `GET /api/cron/reminder` and `/api/cron/reminder-standard` at two UTC slots; only the one in Boston’s 8 a.m. hour sends. No public enrollment form or user database is needed for one owner.
@@ -56,7 +60,7 @@ Official references: [cron setup](https://vercel.com/docs/cron-jobs), [Hobby tim
 - Changing sender/link settings during the same day can cause a conflicting payload for the same key and a provider rejection. Check logs rather than rotating keys to force repeated sends.
 - Responses never expose recipient addresses, keys, secrets, or raw provider errors. Provider errors return a generic 502; Resend's private dashboard is the source for delivery diagnostics. Successful acceptance returns `accepted: true`, not an assertion of inbox delivery.
 - The service worker doesn't cache API routes. There are no browser-side email credentials.
-- The email contains a generic reminder and link only. The server cannot inspect the phone's IndexedDB, calculate its due count, or know whether you already completed today's set. A reminder still arrives on completed days while enabled.
+- In local-only mode the email contains a generic reminder and link only. The server cannot inspect phone IndexedDB. In cloud mode it uses only the last synced metadata/shared selection. A reminder still arrives on completed days while enabled.
 - Resend receives the configured sender/recipient and message to deliver it. Vercel holds the server environment variables. Personal problem notes and review history remain local.
 
 Official references: [cron authentication](https://vercel.com/docs/cron-jobs/manage-cron-jobs), [Resend idempotency window](https://resend.com/docs/dashboard/emails/idempotency-keys).

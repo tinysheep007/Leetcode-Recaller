@@ -10,7 +10,7 @@
 
 The top-level Questions tab has no count. The portal itself shows the total number of saved questions and problems with questions. The flashcard front does not display personal question contents or a problem-specific question count. Writing questions does not rate a card, change its FSRS state, or complete a daily obligation.
 
-Questions are plain text, preserving internal line breaks. Each must contain 1–10,000 non-whitespace characters. Saving is explicit; unsaved draft text is not persisted across navigation/refresh. No deletion, resolved status, full note editing, or cloud sync was added.
+Questions are plain text, preserving internal line breaks. Each must contain 1–10,000 non-whitespace characters. Saving is explicit; unsaved draft text is not persisted across navigation/refresh. No deletion, resolved status or full note editing was added. Optional cloud sync covers minimal review metadata only; personal questions remain local.
 
 ## Database design
 
